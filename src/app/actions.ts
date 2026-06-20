@@ -1,57 +1,8 @@
 "use server";
 
 import prisma from "@/lib/db";
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-// Helper to authenticate user and sync with Prisma UserProfile
-async function getAuthUser() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user || !user.email) {
-    throw new Error("Unauthorized");
-  }
-
-  // Sync user with UserProfile database entity using thread-safe upsert
-  const profile = await prisma.userProfile.upsert({
-    where: { email: user.email },
-    update: {},
-    create: {
-      id: user.id, // Use Supabase user ID as primary key
-      email: user.email,
-      selectedTheme: "light-gold",
-    },
-  });
-
-  return profile;
-}
-
-export async function getCurrentUser() {
-  try {
-    return await getAuthUser();
-  } catch {
-    return null;
-  }
-}
-
-// Get all categories for current user
-export async function getCategories() {
-  const user = await getAuthUser();
-  return prisma.category.findMany({
-    where: { userId: user.id },
-    orderBy: { order: "asc" },
-  });
-}
-
-// Get all cards for current user
-export async function getCards() {
-  const user = await getAuthUser();
-  return prisma.card.findMany({
-    where: { userId: user.id },
-    orderBy: { order: "asc" },
-  });
-}
+import { getAuthUser } from "@/lib/auth";
 
 // Create a new category
 export async function createCategory(name: string) {

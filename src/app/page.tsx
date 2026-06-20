@@ -1,4 +1,4 @@
-import { getCurrentUser, getCategories, getCards } from "@/app/actions";
+import { getCurrentUser, getCategories, getCards } from "@/lib/queries";
 import { redirect } from "next/navigation";
 import DashboardClient from "@/components/DashboardClient";
 
