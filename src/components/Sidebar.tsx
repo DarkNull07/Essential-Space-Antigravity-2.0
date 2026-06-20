@@ -201,19 +201,17 @@ export default function Sidebar({
   return (
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
-      <div className="space-y-6">
-        <div className="flex justify-between items-center pb-2">
-          <div className="flex items-center space-x-3.5 w-full">
-            <Logo size={36} className="text-foreground flex-shrink-0" />
-            <span className="font-display font-bold uppercase tracking-wider text-2xl leading-none">
-              Essential Space
-            </span>
-          </div>
+      <header className="flex justify-between items-end border-b border-foreground/10 pb-4 lg:h-16">
+        <div className="flex items-center space-x-3.5 w-full">
+          <Logo size={36} className="text-foreground flex-shrink-0" />
+          <span className="font-display font-bold uppercase tracking-wider text-2xl leading-none">
+            Essential Space
+          </span>
         </div>
-      </div>
+      </header>
 
       {/* Category List */}
-      <div className="flex-1 flex flex-col space-y-4 pt-4 border-t border-foreground/10 min-h-[250px]">
+      <div className="flex-1 flex flex-col space-y-4 pt-4 min-h-[250px]">
         <span className="font-mono text-xs text-accent uppercase tracking-widest block font-semibold">
           * 01. ACTIVE CATEGORIES
         </span>

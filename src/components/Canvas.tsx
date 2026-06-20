@@ -294,7 +294,7 @@ export default function Canvas({
       )}
 
       {/* Canvas Top Navigation / Status Header */}
-      <header className="flex justify-between items-center border-b border-foreground/10 pb-4">
+      <header className="flex justify-between items-end border-b border-foreground/10 pb-4 lg:h-16">
         <div className="space-y-1">
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest block font-semibold">
             {activeCategory ? `* 03. CATEGORY / ${activeCategory.name}` : "* 03. ALL INSTANCES"}
