@@ -202,10 +202,10 @@ export default function Sidebar({
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2.5">
-            <Logo size={22} className="text-foreground" />
-            <span className="font-display font-bold uppercase tracking-wider text-sm">
+        <div className="flex justify-between items-center pb-2">
+          <div className="flex items-center space-x-3.5 w-full">
+            <Logo size={36} className="text-foreground flex-shrink-0" />
+            <span className="font-display font-bold uppercase tracking-wider text-2xl leading-none">
               Essential Space
             </span>
           </div>
