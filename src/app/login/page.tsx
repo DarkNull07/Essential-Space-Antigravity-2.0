@@ -2,36 +2,62 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 const supabase = createClient();
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     setLoading(true);
     setMessage(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      if (isSignUp) {
+        if (password !== confirmPassword) {
+          setMessage({ type: "error", text: "Passwords do not match." });
+          setLoading(false);
+          return;
+        }
 
-      if (error) {
-        setMessage({ type: "error", text: error.message });
-      } else {
-        setMessage({
-          type: "success",
-          text: "Check your email for the magic link to complete authentication.",
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
         });
+
+        if (error) {
+          setMessage({ type: "error", text: error.message });
+        } else {
+          setMessage({
+            type: "success",
+            text: "Please check your email to confirm signing up to Essential Space.",
+          });
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setMessage({ type: "error", text: error.message });
+        } else {
+          router.push("/");
+          router.refresh();
+        }
       }
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "An unexpected error occurred." });
@@ -110,10 +136,12 @@ export default function LoginPage() {
               * 02. AUTHENTICATION
             </span>
             <h3 className="font-display font-bold text-2xl uppercase tracking-tight">
-              Access the Workspace
+              {isSignUp ? "Create an Account" : "Access the Workspace"}
             </h3>
             <p className="font-sans text-xs text-muted-foreground">
-              Sign in with a passwordless magic link or your Google account.
+              {isSignUp
+                ? "Sign up with your email and password, or your Google account."
+                : "Sign in with your email and password, or your Google account."}
             </p>
           </div>
 
@@ -129,7 +157,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-1">
               <label htmlFor="email" className="font-mono text-xs uppercase tracking-wider block">
                 Email Address
@@ -146,14 +174,82 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="space-y-1">
+              <label htmlFor="password" className="font-mono text-xs uppercase tracking-wider block">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                className="w-full bg-background border-2 border-foreground px-4 py-3 font-sans text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              />
+            </div>
+
+            {isSignUp && (
+              <div className="space-y-1">
+                <label htmlFor="confirmPassword" className="font-mono text-xs uppercase tracking-wider block">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="w-full bg-background border-2 border-foreground px-4 py-3 font-sans text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50"
             >
-              {loading ? "Sending Magic Link..." : "Request Magic Link"}
+              {isSignUp
+                ? (loading ? "Creating Account..." : "Create Account")
+                : (loading ? "Signing In..." : "Sign In")}
             </button>
           </form>
+
+          <div className="text-center font-mono text-[11px] uppercase tracking-wider pt-2 text-muted-foreground">
+            {isSignUp ? (
+              <span>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setMessage(null);
+                  }}
+                  className="text-accent font-bold hover:underline focus:outline-none ml-1 uppercase"
+                >
+                  Sign In
+                </button>
+              </span>
+            ) : (
+              <span>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setMessage(null);
+                  }}
+                  className="text-accent font-bold hover:underline focus:outline-none ml-1 uppercase"
+                >
+                  Sign Up
+                </button>
+              </span>
+            )}
+          </div>
 
           <div className="relative flex py-2 items-center">
             <div className="flex-grow border-t border-foreground/10"></div>
