@@ -1,0 +1,47 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model UserProfile {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  selectedTheme String     @default("light-gold")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  categories    Category[]
+  cards         Card[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  order     Int      
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     Card[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+model Card {
+  id          String      @id @default(uuid())
+  type        String      // "LINK", "TEXT", "IMAGE", "FILE"
+  title       String?     
+  content     String      
+  metadata    Json?       // Stores image width/height, bytes, favicon, domain
+  order       Int         
+  categoryId  String?
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  userId      String
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}

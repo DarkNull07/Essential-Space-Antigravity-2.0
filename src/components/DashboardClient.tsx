@@ -1,0 +1,86 @@
+"use client";
+
+import { useState } from "react";
+import Sidebar from "./Sidebar";
+import Canvas from "./Canvas";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  selectedTheme: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  order: number;
+}
+
+interface Card {
+  id: string;
+  type: string;
+  title: string | null;
+  content: string;
+  metadata: any;
+  order: number;
+  categoryId: string | null;
+}
+
+interface DashboardClientProps {
+  user: UserProfile;
+  initialCategories: Category[];
+  initialCards: Card[];
+}
+
+export default function DashboardClient({
+  user,
+  initialCategories,
+  initialCards,
+}: DashboardClientProps) {
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [cards, setCards] = useState<Card[]>(initialCards);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+
+  // Native drag-and-drop progress status
+  const [uploadProgress, setUploadProgress] = useState<{
+    filename: string;
+    progress: number;
+  } | null>(null);
+
+  // Compute card counts dynamically
+  const cardCounts = categories.reduce(
+    (acc, cat) => {
+      acc[cat.id] = cards.filter((c) => c.categoryId === cat.id).length;
+      return acc;
+    },
+    { all: cards.length } as Record<string, number>
+  );
+
+  const activeCategory = activeCategoryId
+    ? categories.find((c) => c.id === activeCategoryId) || null
+    : null;
+
+  return (
+    <div className="flex flex-col lg:flex-row min-h-screen bg-background">
+      <Sidebar
+        userEmail={user.email}
+        categories={categories}
+        activeCategoryId={activeCategoryId}
+        cardCounts={cardCounts}
+        onSelectCategory={setActiveCategoryId}
+        onCategoriesChange={setCategories}
+        uploadProgress={uploadProgress}
+      />
+      <Canvas
+        activeCategory={activeCategory}
+        cards={cards}
+        onCardsChange={setCards}
+        onUploadStart={(filename) => setUploadProgress({ filename, progress: 0 })}
+        onUploadProgress={(progress) =>
+          setUploadProgress((prev) => (prev ? { ...prev, progress } : null))
+        }
+        onUploadEnd={() => setUploadProgress(null)}
+      />
+    </div>
+  );
+}

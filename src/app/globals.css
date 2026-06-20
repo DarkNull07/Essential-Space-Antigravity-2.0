@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #F9F9FB;
+  --color-foreground: #0B0C10;
+  --color-muted: #EAEAEA;
+  --color-accent: #FF5A36;
+  
+  --font-display: var(--font-syne), "Syne", "sans-serif";
+  --font-sans: var(--font-dm-sans), "DM Sans", "sans-serif";
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", "monospace";
+}
+
+:root {
+  --background: #F9F9FB;
+  --foreground: #0B0C10;
+  --muted: #EAEAEA;
+  --accent: #FF5A36;
+}
