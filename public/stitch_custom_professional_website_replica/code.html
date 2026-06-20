@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StackDot - All Items</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#e9c349",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffe088",
+                        "inverse-surface": "#2e3132",
+                        "primary-fixed-dim": "#e9c349",
+                        "tertiary-container": "#00c5db",
+                        "background": "#f8f9fa",
+                        "surface-container": "#edeeef",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#241a00",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f5",
+                        "surface": "#f8f9fa",
+                        "surface-bright": "#f8f9fa",
+                        "on-tertiary-container": "#004d56",
+                        "tertiary-fixed": "#9cf0ff",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-fixed-dim": "#00daf3",
+                        "secondary": "#5f5e5e",
+                        "tertiary": "#006875",
+                        "primary-container": "#d4af37",
+                        "on-secondary-container": "#636262",
+                        "outline": "#7f7663",
+                        "error-container": "#ffdad6",
+                        "on-background": "#191c1d",
+                        "outline-variant": "#d0c5af",
+                        "on-surface-variant": "#4d4635",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "secondary-container": "#e2dfde",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-tertiary-fixed": "#001f24",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "surface-tint": "#735c00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "24px",
+                        "unit": "8px",
+                        "gutter": "16px",
+                        "margin-lg": "48px",
+                        "max-width": "1440px",
+                        "margin-md": "24px",
+                        "margin-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "label-sm": ["Geist"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-md": ["Geist"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "14px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: theme('colors.outline-variant'); border-radius: theme('borderRadius.full'); }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.outline'); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md bg-surface antialiased overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface text-primary border-b border-outline-variant shadow-sm docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-container-padding py-unit h-16 max-w-max-width mx-auto">
+<!-- Logo area -->
+<div class="flex items-center gap-3 w-64 flex-shrink-0">
+<div class="w-8 h-8 rounded text-primary flex items-center justify-center bg-primary-container bg-opacity-20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">layers</span>
+</div>
+<span class="text-headline-md font-headline-md font-bold text-on-surface">StackDot</span>
+</div>
+<!-- Search Bar -->
+<div class="flex-1 max-w-2xl px-4 hidden md:flex items-center">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant opacity-70">search</span>
+<input class="w-full bg-surface-container-low border border-transparent focus:border-primary focus:bg-surface rounded-full py-2 pl-10 pr-4 text-body-sm font-body-sm outline-none transition-colors text-on-surface placeholder-on-surface-variant" placeholder="Search links or text..." type="text"/>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4 flex-shrink-0">
+<span class="text-label-sm font-label-sm text-on-surface-variant hidden lg:inline-block border border-outline-variant rounded-full px-3 py-1">user@example.com</span>
+<button class="bg-primary text-on-primary hover:bg-surface-tint transition-colors px-4 py-1.5 rounded-lg text-label-md font-label-md flex items-center gap-1 shadow-sm active:scale-95 duration-100" onclick="openModal()">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    + Add
+                </button>
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors px-3 py-1.5 rounded-lg border border-outline-variant text-label-md font-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+                    Themes
+                    <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<div class="w-px h-6 bg-outline-variant mx-1 hidden sm:block"></div>
+<button class="text-on-surface-variant hover:bg-surface-container hover:text-error transition-colors p-1.5 rounded-lg flex items-center gap-1 text-label-md font-label-md">
+<span class="material-symbols-outlined">logout</span>
+<span class="hidden xl:inline-block">Sign Out</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area with Sidebar -->
+<div class="flex flex-1 overflow-hidden max-w-max-width mx-auto w-full relative">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col p-margin-sm overflow-y-auto bg-surface-container-low border-r border-outline-variant z-40 hidden md:flex">
+<div class="mb-4 px-3 pt-4">
+<h2 class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant">CATEGORIES</h2>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<!-- Active Nav Item -->
+<a class="sidebar-link flex items-center justify-between px-3 py-2 bg-primary-container text-on-primary-container rounded-lg font-bold group active:scale-95 duration-100 transition-all" href="#" id="link-view-all-items" onclick="switchView('view-all-items')">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">layers</span>
+<span class="text-label-md font-label-md">All Items</span>
+</div>
+<span class="nav-badge bg-primary text-on-primary text-label-sm font-label-sm px-2 py-0.5 rounded-full bg-opacity-90">2</span>
+</a>
+<!-- Inactive Nav Items -->
+<a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg group transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined opacity-70">folder</span>
+<span class="text-label-md font-label-md">General</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant text-label-sm font-label-sm px-2 py-0.5 rounded-full">2</span>
+</a>
+<div class="my-2 border-t border-dashed border-outline-variant mx-2"></div>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg group transition-all border border-transparent hover:border-outline-variant border-dashed" href="#">
+<span class="material-symbols-outlined opacity-70">add_circle</span>
+<span class="text-label-md font-label-md">New Category</span>
+</a>
+<a class="sidebar-link flex items-center justify-between px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg group transition-all mt-2" href="#" id="link-view-knowledge-base" onclick="switchView('view-knowledge-base')">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined opacity-70">menu_book</span>
+<span class="text-label-md font-label-md">Knowledge Base</span>
+</div>
+<span class="nav-badge bg-surface-variant text-on-surface-variant text-label-sm font-label-sm px-2 py-0.5 rounded-full">0</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant border-opacity-50">
+<a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined opacity-70">delete</span>
+<span class="text-label-md font-label-md">Trash Bin</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant text-label-sm font-label-sm px-2 py-0.5 rounded-full">0</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col md:ml-64 w-full h-[calc(100vh-64px)] overflow-y-auto bg-background">
+<!-- View 1: All Items (Dashboard) -->
+<div class="p-container-padding lg:p-margin-lg max-w-5xl mx-auto w-full" id="view-all-items">
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+<div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface">All Items</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">2 items</p>
+</div>
+<!-- View Toggles (Decorative) -->
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant border-opacity-50 self-start sm:self-auto">
+<button class="p-1.5 bg-primary-container text-on-primary-container rounded shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">splitscreen</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">list</span>
+</button>
+</div>
+</div>
+<!-- Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface rounded-lg border-2 border-primary-container shadow-sm p-4 flex flex-col relative group transition-all hover:shadow-md">
+<div class="flex items-start justify-between mb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A small abstract 3D globe icon, rendered in soft blue and white tones with a smooth, matte finish. The globe appears slightly floating, evoking a modern web browser or internet icon feel, set against a pristine light-mode background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIkgcWTRmZoDPXv0J74HBHk3pb9wmcF-zNCuo7oF6E8v94Gu4qKKc5gvhAvg5GTOp2Mo4cYK3pCeB1ABSLkjfyac69OIjOlGqSAc8HPl16lsRf-qt5F1qQaUBiUEpcx2aAn0fXjR1h0nY7S7G5KsbChRCq6QNDEX5nDfYXje4Jyjpv5s8MMfZW0hQnSuLEXePv4Oz50lANyvM5YDT9oU7l8qaD9sv8GCdaHnhmOk7DPMvbsdPqCPnFBnsM5Do4R-GxXJSvpMMyw2ih"/>
+</div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface line-clamp-1">Welcome to StackDot!</h3>
+</div>
+<button class="bg-primary text-on-primary text-label-sm font-label-sm px-3 py-1 rounded flex items-center gap-1 opacity-90 hover:opacity-100 transition-opacity">
+                                        Go <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex-1">
+                                    StackDot is a visual, modern bookmark and knowledge manager. Organize your resources, build custom sidebar layouts, and securely store notes.
+                                </p>
+<button class="absolute bottom-3 right-3 p-1.5 bg-surface border border-outline-variant rounded text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:bg-surface-container">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface rounded-lg border border-outline-variant shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-4 flex flex-col group transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:border-outline">
+<div class="flex items-start justify-between mb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A subtle geometric icon resembling a stylized gear or settings cog in muted silver and pale blue hues. The design is highly polished, soft, and minimalist, suited for a high-end SaaS settings interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4RD5yk8V-VZ4XLSDPvinDVkIVDV4KuCPXjhagfMrJe-xmgGW3dN5_OfJgKttN8KtsBjeS0P43iRlNW_vAwdNY3XuYLE0zAZr7-kYoJNF18ikjYZ2oriXKCY4ao5ag_KkB2xf_Y1Owht6GeUspyPv7y1iCLAWkaIJ4x-6MqsXJXKCRMPKthRrmoIs4z3tJfiXB3DV-BPYNusIUpuC6cnQp4tQ9ER6SZIs8v6aB-AXNh6YMXS6IBXDdd-7uCWhCq_2BOYA7SBrCcPUL"/>
+</div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface line-clamp-1">Customize Your Sidebar</h3>
+</div>
+<button class="bg-primary text-on-primary text-label-sm font-label-sm px-3 py-1 rounded flex items-center gap-1 opacity-90 hover:opacity-100 transition-opacity">
+                                        Go <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex-1">
+                                    Double-click any custom category in the sidebar to rename it, choose a new icon, or delete it entirely.
+                                </p>
+</div>
+<!-- Add New Card Placeholder -->
+<button class="bg-transparent rounded-lg border-2 border-dashed border-outline-variant hover:border-outline hover:bg-surface-container-low transition-colors p-4 flex flex-col items-center justify-center text-on-surface-variant min-h-[160px]" onclick="openModal()">
+<span class="material-symbols-outlined text-[32px] mb-2 opacity-50">add</span>
+<span class="text-label-md font-label-md">Add New File</span>
+</button>
+</div>
+</div>
+<!-- View 2: Knowledge Base -->
+<div class="hidden p-container-padding lg:p-margin-lg w-full max-w-5xl mx-auto flex flex-col min-h-full" id="view-knowledge-base">
+<!-- Header section -->
+<div class="flex flex-col mb-6">
+<h1 class="text-headline-lg font-headline-lg font-bold text-on-surface tracking-tight mb-1">Knowledge Base</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant">0 items</p>
+</div>
+<div class="w-full h-px bg-outline-variant border-opacity-50 mb-6"></div>
+<!-- Action Bar -->
+<div class="flex flex-col sm:flex-row justify-between sm:items-center w-full mb-6 gap-4">
+<div class="flex items-center gap-3">
+<button class="bg-primary hover:bg-surface-tint text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-transform active:scale-95">
+                    View All
+                    <span class="bg-white bg-opacity-20 text-white text-label-sm px-1.5 py-0.5 rounded-full ml-1">0</span>
+</button>
+<button class="border border-dashed border-outline-variant hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-lg flex items-center gap-2 transition-colors bg-surface">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Category
+                </button>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant border-opacity-50 self-start sm:self-auto">
+<button class="bg-primary-container text-on-primary-container p-1.5 rounded shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container p-1.5 rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container p-1.5 rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">format_list_bulleted</span>
+</button>
+</div>
+</div>
+<!-- Empty State Card -->
+<div class="flex-1 w-full bg-surface border border-outline-variant border-opacity-50 rounded-lg flex flex-col items-center justify-center p-margin-lg shadow-sm min-h-[400px]">
+<div class="flex flex-col items-center text-center max-w-md">
+<span class="material-symbols-outlined text-[64px] text-outline-variant opacity-50 mb-6" style="font-variation-settings: 'FILL' 0;">description</span>
+<h3 class="text-body-lg font-body-lg font-medium text-on-surface mb-2">No items found</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mb-8">Try adjusting your search or category filter.</p>
+<button class="bg-primary hover:bg-surface-tint text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors duration-100 active:scale-95 shadow-sm" onclick="openModal()">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Add New File
+                </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Modal Overlay -->
+<div class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-on-background bg-opacity-50 backdrop-blur-sm transition-opacity" id="modal-add">
+<div class="bg-surface rounded-xl shadow-lg w-full max-w-md p-6 border border-outline-variant">
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface">Add New Entry</h2>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors" onclick="closeModal()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">URL or Text</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="https://..." type="text"/>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">Category</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+<option>General</option>
+<option>Knowledge Base</option>
+</select>
+</div>
+</div>
+<div class="mt-6 flex justify-end gap-3">
+<button class="px-4 py-2 text-label-md font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors border border-outline-variant" onclick="closeModal()">Cancel</button>
+<button class="px-4 py-2 bg-primary text-on-primary text-label-md font-label-md rounded-lg hover:bg-surface-tint transition-colors shadow-sm" onclick="closeModal()">Add Item</button>
+</div>
+</div>
+</div>
+<script>
+    function switchView(viewId) {
+        document.getElementById('view-all-items').classList.add('hidden');
+        document.getElementById('view-knowledge-base').classList.add('hidden');
+        document.getElementById(viewId).classList.remove('hidden');
+        
+        // update sidebar active states
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold');
+            link.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+            const badge = link.querySelector('.nav-badge');
+            if(badge) {
+                badge.classList.remove('bg-primary', 'text-on-primary', 'bg-opacity-90');
+                badge.classList.add('bg-surface-variant', 'text-on-surface-variant');
+            }
+            const icon = link.querySelector('.material-symbols-outlined');
+            if(icon) {
+                icon.classList.remove('text-primary');
+                icon.classList.add('opacity-70');
+            }
+        });
+        
+        const activeLink = document.getElementById('link-' + viewId);
+        if(activeLink) {
+            activeLink.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold');
+            activeLink.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+            const badge = activeLink.querySelector('.nav-badge');
+            if(badge) {
+                badge.classList.add('bg-primary', 'text-on-primary', 'bg-opacity-90');
+                badge.classList.remove('bg-surface-variant', 'text-on-surface-variant');
+            }
+            const icon = activeLink.querySelector('.material-symbols-outlined');
+            if(icon) {
+                icon.classList.add('text-primary');
+                icon.classList.remove('opacity-70');
+            }
+        }
+    }
+
+    function openModal() {
+        document.getElementById('modal-add').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-add').classList.add('hidden');
+    }
+</script>
+</body></html>

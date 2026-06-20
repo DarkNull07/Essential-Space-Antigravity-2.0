@@ -21,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Folder, FolderOpen, Plus, Trash2, LogOut, User, Loader2 } from "lucide-react";
 import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
+import Logo from "@/components/Logo";
 
 interface Category {
   id: string;
@@ -201,10 +202,8 @@ export default function Sidebar({
       {/* Brand & User Profile */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="font-display font-extrabold text-lg px-1.5 py-0.5 bg-foreground text-background">
-              ES
-            </span>
+          <div className="flex items-center space-x-2.5">
+            <Logo size={22} className="text-foreground" />
             <span className="font-display font-bold uppercase tracking-wider text-sm">
               Essential Space
             </span>

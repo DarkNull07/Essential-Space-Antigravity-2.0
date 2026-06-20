@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Logo from "@/components/Logo";
 
 const supabase = createClient();
 
@@ -88,9 +89,7 @@ export default function LoginPage() {
       {/* Top Navigation */}
       <header className="flex justify-between items-center border-b border-foreground pb-6">
         <div className="flex items-center space-x-3">
-          <span className="font-display font-bold text-2xl tracking-tight border-2 border-foreground px-2 py-0.5 bg-foreground text-background">
-            ES
-          </span>
+          <Logo size={28} className="text-foreground" />
           <span className="font-display font-semibold tracking-wider text-xl uppercase hidden sm:inline">
             Essential Space
           </span>
