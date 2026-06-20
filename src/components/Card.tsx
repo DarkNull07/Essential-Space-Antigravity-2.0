@@ -126,7 +126,14 @@ export default function Card({ card, onDelete }: CardProps) {
                   <Globe className="w-3.5 h-3.5 text-muted-foreground" />
                 )}
                 <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground line-clamp-1">
-                  {card.metadata.domain || new URL(card.content).hostname}
+                  {(() => {
+                    if (card.metadata?.domain) return card.metadata.domain;
+                    try {
+                      return new URL(card.content).hostname;
+                    } catch {
+                      return card.content;
+                    }
+                  })()}
                 </span>
               </div>
             )}

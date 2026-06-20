@@ -208,6 +208,9 @@ export default function Canvas({
 
     const oldIndex = filteredCards.findIndex((c) => c.id === active.id);
     const newIndex = filteredCards.findIndex((c) => c.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
     const reorderedFiltered = arrayMove(filteredCards, oldIndex, newIndex);
 
     // Reconstruct global cards state by replacing category cards with the reordered ones

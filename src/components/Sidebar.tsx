@@ -146,6 +146,8 @@ export default function Sidebar({
     const oldIndex = categories.findIndex((c) => c.id === active.id);
     const newIndex = categories.findIndex((c) => c.id === over.id);
 
+    if (oldIndex === -1 || newIndex === -1) return;
+
     const reordered = arrayMove(categories, oldIndex, newIndex);
     onCategoriesChange(reordered);
 
@@ -165,8 +167,9 @@ export default function Sidebar({
       const created = await createCategory(newCatName.trim());
       onCategoriesChange([...categories, created]);
       setNewCatName("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error adding category:", err);
+      alert("A category with this name already exists. Please choose a unique name.");
     } finally {
       setAddingCat(false);
     }
