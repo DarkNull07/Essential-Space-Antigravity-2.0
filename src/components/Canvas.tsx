@@ -16,9 +16,9 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut } from "lucide-react";
+import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette } from "lucide-react";
 import Card from "./Card";
-import { createCard, updateCardsOrder } from "@/app/actions";
+import { createCard, updateCardsOrder, updateUserTheme } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 
 interface Category {
@@ -38,7 +38,11 @@ interface CardType {
 }
 
 interface CanvasProps {
-  userEmail: string | null;
+  user: {
+    email: string;
+    selectedTheme: string;
+  };
+  onThemeChange: (theme: string) => void;
   activeCategory: Category | null;
   cards: CardType[];
   onCardsChange: React.Dispatch<React.SetStateAction<CardType[]>>;
@@ -48,7 +52,8 @@ interface CanvasProps {
 }
 
 export default function Canvas({
-  userEmail,
+  user,
+  onThemeChange,
   activeCategory,
   cards,
   onCardsChange,
@@ -59,6 +64,17 @@ export default function Canvas({
   const [mounted, setMounted] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const supabase = createClient();
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  const handleThemeChange = async (themeId: string) => {
+    onThemeChange(themeId);
+    setShowThemeMenu(false);
+    try {
+      await updateUserTheme(themeId);
+    } catch (err) {
+      console.error("Failed to update user theme:", err);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -284,11 +300,81 @@ export default function Canvas({
             {activeCategory ? activeCategory.name : "PRIMARY CANVAS"}
           </h2>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 relative">
+          {/* Themes Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowThemeMenu(!showThemeMenu)}
+              className="bg-white hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[10px] uppercase px-3 py-2 flex items-center gap-1.5 transition-all cursor-pointer font-bold"
+            >
+              <Palette className="w-3.5 h-3.5 text-accent" />
+              THEME
+            </button>
+
+            {showThemeMenu && (
+              <div className="absolute right-0 mt-3 w-64 bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_#0B0C10] z-50 p-4 space-y-4">
+                <div className="space-y-1">
+                  <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
+                    * LIGHT TEMPLATES
+                  </span>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: "light-gold", name: "Light Gold", accent: "#FF5A36" },
+                      { id: "light-swiss", name: "Light Swiss", accent: "#D82B2B" },
+                      { id: "light-forest", name: "Light Forest", accent: "#10B981" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleThemeChange(t.id)}
+                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${
+                          user.selectedTheme === t.id
+                            ? "bg-foreground text-background border-foreground font-bold"
+                            : "bg-background hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        <span>{t.name}</span>
+                        <span className="w-2.5 h-2.5 rounded-full border border-foreground/30" style={{ backgroundColor: t.accent }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
+                    * DARK TEMPLATES
+                  </span>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: "dark-gold", name: "Dark Gold", accent: "#F59E0B" },
+                      { id: "dark-cyber", name: "Dark Cyber", accent: "#FF2E93" },
+                      { id: "dark-mono", name: "Dark Mono", accent: "#FFFFFF" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleThemeChange(t.id)}
+                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${
+                          user.selectedTheme === t.id
+                            ? "bg-foreground text-background border-foreground font-bold"
+                            : "bg-background hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        <span>{t.name}</span>
+                        <span className="w-2.5 h-2.5 rounded-full border border-foreground/30" style={{ backgroundColor: t.accent }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Card */}
           <div className="flex items-center space-x-3 border-2 border-foreground bg-white px-3 py-2 shadow-[2px_2px_0px_0px_#0B0C10] text-xs">
             <div className="flex items-center space-x-1.5 font-mono text-[11px] text-foreground">
               <User className="w-3.5 h-3.5 text-accent" />
-              <span className="truncate max-w-[150px] font-semibold">{userEmail || "anonymous@domain.com"}</span>
+              <span className="truncate max-w-[150px] font-semibold">{user.email}</span>
             </div>
             <div className="border-l border-foreground/20 h-4" />
             <button

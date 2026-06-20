@@ -183,3 +183,14 @@ export async function deleteCard(id: string) {
   revalidatePath("/");
   return card;
 }
+
+// Update user theme preference
+export async function updateUserTheme(theme: string) {
+  const user = await getAuthUser();
+  await prisma.userProfile.update({
+    where: { id: user.id },
+    data: { selectedTheme: theme },
+  });
+  revalidatePath("/");
+}
+

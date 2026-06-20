@@ -40,6 +40,7 @@ export default function DashboardClient({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [cards, setCards] = useState<Card[]>(initialCards);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [theme, setTheme] = useState(user.selectedTheme);
 
   // Native drag-and-drop progress status
   const [uploadProgress, setUploadProgress] = useState<{
@@ -61,7 +62,7 @@ export default function DashboardClient({
     : null;
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-background">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-background text-foreground transition-colors duration-300" data-theme={theme}>
       <Sidebar
         categories={categories}
         activeCategoryId={activeCategoryId}
@@ -71,7 +72,8 @@ export default function DashboardClient({
         uploadProgress={uploadProgress}
       />
       <Canvas
-        userEmail={user.email}
+        user={{ ...user, selectedTheme: theme }}
+        onThemeChange={setTheme}
         activeCategory={activeCategory}
         cards={cards}
         onCardsChange={setCards}

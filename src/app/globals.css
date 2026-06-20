@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #F9F9FB;
-  --color-foreground: #0B0C10;
-  --color-muted: #EAEAEA;
-  --color-accent: #FF5A36;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
   
   --font-display: var(--font-syne), "Syne", "sans-serif";
   --font-sans: var(--font-dm-sans), "DM Sans", "sans-serif";
@@ -17,3 +17,46 @@
   --muted: #EAEAEA;
   --accent: #FF5A36;
 }
+
+[data-theme="light-gold"] {
+  --background: #F9F9FB;
+  --foreground: #0B0C10;
+  --muted: #EAEAEA;
+  --accent: #FF5A36;
+}
+
+[data-theme="light-swiss"] {
+  --background: #F4F4F4;
+  --foreground: #1A1A1A;
+  --accent: #D82B2B;
+  --muted: #E0E0E0;
+}
+
+[data-theme="light-forest"] {
+  --background: #F5F6F4;
+  --foreground: #1B2A1E;
+  --accent: #10B981;
+  --muted: #E5E7E2;
+}
+
+[data-theme="dark-gold"] {
+  --background: #0B0C10;
+  --foreground: #F9F9FB;
+  --accent: #F59E0B;
+  --muted: #1F2937;
+}
+
+[data-theme="dark-cyber"] {
+  --background: #0A0A0C;
+  --foreground: #E5E5E9;
+  --accent: #FF2E93;
+  --muted: #1E1E2F;
+}
+
+[data-theme="dark-mono"] {
+  --background: #121212;
+  --foreground: #FFFFFF;
+  --accent: #FFFFFF;
+  --muted: #262626;
+}
+
