@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
 import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
+import { useConfirm } from "./ConfirmDialog";
 
 interface Category {
   id: string;
@@ -120,6 +121,7 @@ export default function Sidebar({
   onCategoriesChange,
   uploadProgress,
 }: SidebarProps) {
+  const confirm = useConfirm();
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -176,7 +178,13 @@ export default function Sidebar({
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (confirm("Are you sure you want to delete this category? Cards inside will be uncategorized.")) {
+    const confirmed = await confirm({
+      title: "Delete Category",
+      message: "Are you sure you want to delete this category? Cards inside will be uncategorized.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (confirmed) {
       try {
         await deleteCategory(id);
         const filtered = categories.filter((c) => c.id !== id);

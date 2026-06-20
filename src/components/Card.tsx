@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon } from "lucide-react";
 import { deleteCard } from "@/app/actions";
+import { useConfirm } from "./ConfirmDialog";
 
 interface CardProps {
   card: {
@@ -19,6 +20,7 @@ interface CardProps {
 }
 
 export default function Card({ card, onDelete }: CardProps) {
+  const confirm = useConfirm();
   const {
     attributes,
     listeners,
@@ -36,7 +38,13 @@ export default function Card({ card, onDelete }: CardProps) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this item?")) {
+    const confirmed = await confirm({
+      title: "Delete Item",
+      message: "Are you sure you want to delete this item? Once deleted, this action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (confirmed) {
       try {
         await deleteCard(card.id);
         if (onDelete) onDelete(card.id);

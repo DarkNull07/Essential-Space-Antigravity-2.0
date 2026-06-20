@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas";
+import { ConfirmProvider } from "./ConfirmDialog";
 
 interface UserProfile {
   id: string;
@@ -63,26 +64,28 @@ export default function DashboardClient({
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-background text-foreground transition-colors duration-300" data-theme={theme}>
-      <Sidebar
-        categories={categories}
-        activeCategoryId={activeCategoryId}
-        cardCounts={cardCounts}
-        onSelectCategory={setActiveCategoryId}
-        onCategoriesChange={setCategories}
-        uploadProgress={uploadProgress}
-      />
-      <Canvas
-        user={{ ...user, selectedTheme: theme }}
-        onThemeChange={setTheme}
-        activeCategory={activeCategory}
-        cards={cards}
-        onCardsChange={setCards}
-        onUploadStart={(filename) => setUploadProgress({ filename, progress: 0 })}
-        onUploadProgress={(progress) =>
-          setUploadProgress((prev) => (prev ? { ...prev, progress } : null))
-        }
-        onUploadEnd={() => setUploadProgress(null)}
-      />
+      <ConfirmProvider>
+        <Sidebar
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          cardCounts={cardCounts}
+          onSelectCategory={setActiveCategoryId}
+          onCategoriesChange={setCategories}
+          uploadProgress={uploadProgress}
+        />
+        <Canvas
+          user={{ ...user, selectedTheme: theme }}
+          onThemeChange={setTheme}
+          activeCategory={activeCategory}
+          cards={cards}
+          onCardsChange={setCards}
+          onUploadStart={(filename) => setUploadProgress({ filename, progress: 0 })}
+          onUploadProgress={(progress) =>
+            setUploadProgress((prev) => (prev ? { ...prev, progress } : null))
+          }
+          onUploadEnd={() => setUploadProgress(null)}
+        />
+      </ConfirmProvider>
     </div>
   );
 }
