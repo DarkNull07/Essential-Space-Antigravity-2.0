@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import {
   DndContext,
   closestCenter,
@@ -19,7 +18,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Folder, FolderOpen, Plus, Trash2, LogOut, User, Loader2 } from "lucide-react";
+import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
 import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
 
@@ -30,7 +29,6 @@ interface Category {
 }
 
 interface SidebarProps {
-  userEmail: string | null;
   categories: Category[];
   activeCategoryId: string | null;
   cardCounts: Record<string, number>;
@@ -115,7 +113,6 @@ function SortableCategoryItem({
 }
 
 export default function Sidebar({
-  userEmail,
   categories,
   activeCategoryId,
   cardCounts,
@@ -126,8 +123,6 @@ export default function Sidebar({
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
@@ -192,11 +187,6 @@ export default function Sidebar({
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
-
   return (
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
@@ -208,23 +198,6 @@ export default function Sidebar({
               Essential Space
             </span>
           </div>
-        </div>
-
-        {/* User Card */}
-        <div className="border-2 border-foreground bg-white p-4 shadow-[3px_3px_0px_0px_#0B0C10] space-y-3">
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-accent" />
-            <span className="font-mono text-xs truncate max-w-[180px]">
-              {userEmail || "anonymous@domain.com"}
-            </span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-muted hover:bg-accent hover:text-white border border-foreground font-mono text-[10px] uppercase py-1.5 tracking-wider transition-colors flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            End Session
-          </button>
         </div>
       </div>
 

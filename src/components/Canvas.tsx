@@ -16,9 +16,10 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus, Link2, Type, FileText, ArrowRight, Loader2 } from "lucide-react";
+import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut } from "lucide-react";
 import Card from "./Card";
 import { createCard, updateCardsOrder } from "@/app/actions";
+import { createClient } from "@/lib/supabase/client";
 
 interface Category {
   id: string;
@@ -37,6 +38,7 @@ interface CardType {
 }
 
 interface CanvasProps {
+  userEmail: string | null;
   activeCategory: Category | null;
   cards: CardType[];
   onCardsChange: React.Dispatch<React.SetStateAction<CardType[]>>;
@@ -46,6 +48,7 @@ interface CanvasProps {
 }
 
 export default function Canvas({
+  userEmail,
   activeCategory,
   cards,
   onCardsChange,
@@ -55,6 +58,12 @@ export default function Canvas({
 }: CanvasProps) {
   const [mounted, setMounted] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   // New card form states
   const [cardType, setCardType] = useState<"TEXT" | "LINK">("TEXT");
@@ -275,8 +284,21 @@ export default function Canvas({
             {activeCategory ? activeCategory.name : "PRIMARY CANVAS"}
           </h2>
         </div>
-        <div className="flex items-center space-x-2 font-mono text-[10px] text-muted-foreground bg-muted border border-foreground/5 px-3 py-1">
-          <span>SUM: {filteredCards.length} ITEMS</span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 border-2 border-foreground bg-white px-3 py-2 shadow-[2px_2px_0px_0px_#0B0C10] text-xs">
+            <div className="flex items-center space-x-1.5 font-mono text-[11px] text-foreground">
+              <User className="w-3.5 h-3.5 text-accent" />
+              <span className="truncate max-w-[150px] font-semibold">{userEmail || "anonymous@domain.com"}</span>
+            </div>
+            <div className="border-l border-foreground/20 h-4" />
+            <button
+              onClick={handleLogout}
+              className="bg-muted hover:bg-accent hover:text-white border border-foreground font-mono text-[9px] uppercase px-2 py-1 tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <LogOut className="w-3 h-3" />
+              End Session
+            </button>
+          </div>
         </div>
       </header>
 

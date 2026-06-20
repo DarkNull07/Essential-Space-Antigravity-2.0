@@ -63,7 +63,6 @@ export default function DashboardClient({
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-background">
       <Sidebar
-        userEmail={user.email}
         categories={categories}
         activeCategoryId={activeCategoryId}
         cardCounts={cardCounts}
@@ -72,6 +71,7 @@ export default function DashboardClient({
         uploadProgress={uploadProgress}
       />
       <Canvas
+        userEmail={user.email}
         activeCategory={activeCategory}
         cards={cards}
         onCardsChange={setCards}
