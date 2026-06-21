@@ -5,6 +5,7 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-card: var(--card);
   
   --font-display: var(--font-syne), "Syne", "sans-serif";
   --font-sans: var(--font-dm-sans), "DM Sans", "sans-serif";
@@ -16,6 +17,7 @@
   --foreground: #0B0C10;
   --muted: #EAEAEA;
   --accent: #FF5A36;
+  --card: #FFFFFF;
 }
 
 [data-theme="light-gold"] {
@@ -23,6 +25,7 @@
   --foreground: #0B0C10;
   --muted: #EAEAEA;
   --accent: #FF5A36;
+  --card: #FFFFFF;
 }
 
 [data-theme="light-swiss"] {
@@ -30,6 +33,7 @@
   --foreground: #1A1A1A;
   --accent: #D82B2B;
   --muted: #E0E0E0;
+  --card: #FFFFFF;
 }
 
 [data-theme="light-forest"] {
@@ -37,6 +41,7 @@
   --foreground: #1B2A1E;
   --accent: #10B981;
   --muted: #E5E7E2;
+  --card: #FFFFFF;
 }
 
 [data-theme="dark-gold"] {
@@ -44,6 +49,7 @@
   --foreground: #F9F9FB;
   --accent: #F59E0B;
   --muted: #1F2937;
+  --card: #16181F;
 }
 
 [data-theme="dark-cyber"] {
@@ -51,6 +57,7 @@
   --foreground: #E5E5E9;
   --accent: #FF2E93;
   --muted: #1E1E2F;
+  --card: #12121A;
 }
 
 [data-theme="dark-mono"] {
@@ -58,5 +65,6 @@
   --foreground: #FFFFFF;
   --accent: #FFFFFF;
   --muted: #262626;
+  --card: #1C1C1C;
 }
 

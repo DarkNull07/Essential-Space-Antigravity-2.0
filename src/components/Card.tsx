@@ -66,7 +66,7 @@ export default function Card({ card, onDelete }: CardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)] flex flex-col group relative overflow-hidden select-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--foreground)] transition-all"
+      className="bg-card border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)] flex flex-col group relative overflow-hidden select-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--foreground)] transition-all"
     >
       {/* Drag Handle Top Bar */}
       <div

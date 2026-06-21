@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCorners,
@@ -16,9 +17,9 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload } from "lucide-react";
+import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil } from "lucide-react";
 import Card from "./Card";
-import { createCard, updateCardsOrder, updateUserTheme, deleteUserAccount } from "@/app/actions";
+import { createCard, updateCardsOrder, updateUserTheme, deleteUserAccount, renameCategory } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle } from "@/lib/utils";
@@ -46,6 +47,7 @@ interface CanvasProps {
   };
   onThemeChange: (theme: string) => void;
   activeCategory: Category | null;
+  categories: Category[];
   cards: CardType[];
   onCardsChange: React.Dispatch<React.SetStateAction<CardType[]>>;
   onUploadStart: (filename: string) => void;
@@ -57,18 +59,43 @@ export default function Canvas({
   user,
   onThemeChange,
   activeCategory,
+  categories,
   cards,
   onCardsChange,
   onUploadStart,
   onUploadProgress,
   onUploadEnd,
 }: CanvasProps) {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const supabase = createClient();
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const confirm = useConfirm();
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [renameName, setRenameName] = useState("");
+  const [renaming, setRenaming] = useState(false);
+
+  const handleRenameCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCategory || renaming) return;
+    const trimmed = renameName.trim();
+    if (!trimmed) return;
+    
+    setRenaming(true);
+    try {
+      await renameCategory(activeCategory.id, trimmed);
+      setIsRenameModalOpen(false);
+      router.refresh();
+    } catch (err) {
+      console.error("Failed to rename category:", err);
+      alert("Failed to rename category. Please make sure the name is unique.");
+    } finally {
+      setRenaming(false);
+    }
+  };
 
   const handleThemeChange = async (themeId: string) => {
     onThemeChange(themeId);
@@ -358,7 +385,7 @@ export default function Canvas({
         <div
           className="absolute inset-4 border-4 border-dashed border-accent bg-accent/5 backdrop-blur-[2px] z-50 flex items-center justify-center pointer-events-none transition-all duration-300"
         >
-          <div className="bg-white border-2 border-foreground p-6 shadow-[6px_6px_0px_0px_var(--foreground)] flex flex-col items-center space-y-3 pointer-events-auto">
+          <div className="bg-card border-2 border-foreground p-6 shadow-[6px_6px_0px_0px_var(--foreground)] flex flex-col items-center space-y-3 pointer-events-auto">
             <div className="w-12 h-12 rounded-full border-2 border-accent border-dashed flex items-center justify-center animate-bounce">
               <Plus className="w-6 h-6 text-accent" />
             </div>
@@ -378,9 +405,23 @@ export default function Canvas({
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest block font-semibold">
             {activeCategory ? `* 03. CATEGORY / ${activeCategory.name}` : "* 03. ALL INSTANCES"}
           </span>
-          <h2 className="font-display font-black text-2xl uppercase tracking-tighter text-foreground">
-            {activeCategory ? activeCategory.name : "PRIMARY CANVAS"}
-          </h2>
+          <div className="flex items-center space-x-2 group">
+            <h2 className="font-display font-black text-2xl uppercase tracking-tighter text-foreground">
+              {activeCategory ? activeCategory.name : "PRIMARY CANVAS"}
+            </h2>
+            {activeCategory && (
+              <button
+                onClick={() => {
+                  setRenameName(activeCategory.name); // Pre-populate!
+                  setIsRenameModalOpen(true);
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-accent transition-all cursor-pointer text-muted-foreground"
+                title="Rename Category"
+              >
+                <Pencil className="w-4 h-4 text-foreground hover:text-accent" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center space-x-3 relative h-10">
           {/* Themes Button */}
@@ -390,14 +431,14 @@ export default function Canvas({
                 setShowThemeMenu(!showThemeMenu);
                 setShowProfileMenu(false);
               }}
-              className="h-10 bg-white hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
+              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
             >
               <Palette className="w-3.5 h-3.5 text-accent" />
               THEME
             </button>
 
             {showThemeMenu && (
-              <div className="absolute right-0 mt-3 w-64 bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
+              <div className="absolute right-0 mt-3 w-64 bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * LIGHT TEMPLATES
@@ -471,7 +512,7 @@ export default function Canvas({
               }
               handleThemeChange(nextTheme);
             }}
-            className="h-10 bg-white hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] px-3 flex items-center justify-center transition-all cursor-pointer font-bold select-none"
+            className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] px-3 flex items-center justify-center transition-all cursor-pointer font-bold select-none"
             title="Toggle Light/Dark Mode"
           >
             {user.selectedTheme.startsWith("dark-") ? (
@@ -488,14 +529,14 @@ export default function Canvas({
                 setShowProfileMenu(!showProfileMenu);
                 setShowThemeMenu(false);
               }}
-              className="h-10 bg-white hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[11px] px-3 flex items-center gap-1.5 transition-all cursor-pointer font-semibold select-none"
+              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[11px] px-3 flex items-center gap-1.5 transition-all cursor-pointer font-semibold select-none"
             >
               <User className="w-3.5 h-3.5 text-accent" />
               <span className="truncate max-w-[150px]">{user.email}</span>
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-64 bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
+              <div className="absolute right-0 mt-3 w-64 bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * PROFILE CONTROLS
@@ -552,7 +593,7 @@ export default function Canvas({
       </header>
 
       {/* Quick Add Form Section */}
-      <section className="bg-white border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
+      <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
         <div className="flex justify-between items-center border-b border-foreground/10 pb-3">
           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
             * ADD CARD TO {activeCategory ? activeCategory.name : "INBOX"}
@@ -600,7 +641,7 @@ export default function Canvas({
                 placeholder="LABEL / NAME"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-background border-2 border-foreground px-3 py-2 font-sans text-xs uppercase focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-background border-2 border-foreground px-3 py-2 font-sans text-xs uppercase focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
               />
             </div>
             <div className="md:col-span-2 space-y-1">
@@ -614,7 +655,7 @@ export default function Canvas({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   required
-                  className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
                 />
                 <button
                   type="submit"
@@ -669,7 +710,7 @@ export default function Canvas({
         ) : (
           mounted && (
             <div className="flex flex-col items-center justify-center border-4 border-dashed border-foreground/10 rounded bg-muted/30 py-20 px-6 text-center space-y-4">
-              <div className="p-3 border-2 border-foreground bg-white shadow-[3px_3px_0px_0px_var(--foreground)]">
+              <div className="p-3 border-2 border-foreground bg-card shadow-[3px_3px_0px_0px_var(--foreground)]">
                 <FileText className="w-8 h-8 text-muted-foreground" />
               </div>
               <div className="space-y-1">
@@ -684,6 +725,58 @@ export default function Canvas({
           )
         )}
       </section>
+
+      {/* Neo-Brutalist Rename Category Modal */}
+      {isRenameModalOpen && activeCategory && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border-4 border-foreground p-6 shadow-[6px_6px_0px_0px_var(--foreground)] w-full max-w-md space-y-4">
+            <div className="flex justify-between items-center border-b-2 border-foreground pb-2">
+              <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">
+                * RENAME CATEGORY
+              </span>
+              <button 
+                onClick={() => setIsRenameModalOpen(false)}
+                className="font-mono text-xs font-bold hover:text-accent cursor-pointer"
+              >
+                [CLOSE]
+              </button>
+            </div>
+            
+            <form onSubmit={handleRenameCategorySubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                  New Category Name
+                </label>
+                <input
+                  type="text"
+                  value={renameName}
+                  onChange={(e) => setRenameName(e.target.value)}
+                  className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-semibold text-xs tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
+                  required
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRenameModalOpen(false)}
+                  className="px-4 py-2 border-2 border-foreground bg-muted hover:bg-foreground/10 font-mono text-[10px] uppercase font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={renaming || !renameName.trim()}
+                  className="px-4 py-2 border-2 border-foreground bg-accent text-white font-mono text-[10px] uppercase font-bold shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {renaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,11 +18,11 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createCategory, deleteCategory, updateCategoriesOrder, renameCategory } from "@/app/actions";
+import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
 import Link from "next/link";
-import { Folder, FolderOpen, Plus, Trash2, Loader2, Pencil } from "lucide-react";
+import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
 
 interface Category {
   id: string;
@@ -46,14 +46,12 @@ function SortableCategoryItem({
   count,
   onClick,
   onDelete,
-  onRename,
 }: {
   category: Category;
   isActive: boolean;
   count: number;
   onClick: () => void;
   onDelete: (id: string) => void;
-  onRename: (id: string, newName: string) => Promise<void>;
 }) {
   const {
     attributes,
@@ -64,48 +62,10 @@ function SortableCategoryItem({
     isDragging,
   } = useSortable({ id: category.id });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(category.name);
-
-  // Focus ergonomics support
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const handleStartEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = async () => {
-    const trimmed = editName.trim();
-    if (!trimmed || trimmed === category.name) {
-      setEditName(category.name);
-      setIsEditing(false);
-      return;
-    }
-    
-    try {
-      await onRename(category.id, trimmed);
-    } catch (err) {
-      console.error("Failed to rename:", err);
-    } finally {
-      setIsEditing(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSaveEdit();
-    } else if (e.key === "Escape") {
-      setEditName(category.name);
-      setIsEditing(false);
-    }
   };
 
   return (
@@ -115,51 +75,20 @@ function SortableCategoryItem({
       className={`border-2 border-foreground p-3 flex justify-between items-center transition-all ${
         isActive
           ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)]"
-          : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)]"
+          : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)]"
       }`}
     >
       {/* Clickable Area for Selection & Drag */}
-      <div className="flex items-center space-x-3 flex-1 min-w-0 group/item" onClick={onClick}>
+      <div className="flex items-center space-x-3 flex-1 min-w-0 group/item cursor-pointer" onClick={onClick}>
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1">
           {isActive ? <FolderOpen className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
         </div>
         
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            onBlur={handleSaveEdit}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-            }}
-            onMouseDown={(e) => {
-              // Stop propagation to prevent DnD sensors from hijacking input focus/click ergonomics
-              e.stopPropagation();
-            }}
-            className="flex-1 bg-background text-foreground border border-foreground/30 px-1.5 py-0.5 font-display font-semibold text-xs tracking-wider uppercase focus:outline-none focus:border-accent"
-            autoFocus
-          />
-        ) : (
-          <div className="flex items-center space-x-2 flex-1 min-w-0">
-            <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
-              {category.name}
-            </span>
-            <button
-              onClick={handleStartEdit}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              className="opacity-0 group-hover/item:opacity-100 p-0.5 hover:text-accent transition-all cursor-pointer text-muted-foreground"
-              title="Rename Category"
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center space-x-2 flex-1 min-w-0">
+          <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
+            {category.name}
+          </span>
+        </div>
 
         <span
           className={`font-mono text-[9px] px-1.5 py-0.5 border ${
@@ -279,16 +208,6 @@ export default function Sidebar({
     }
   };
 
-  const handleRenameCategory = async (id: string, newName: string) => {
-    try {
-      const updated = await renameCategory(id, newName);
-      const updatedList = categories.map((c) => (c.id === id ? updated : c));
-      onCategoriesChange(updatedList);
-    } catch (err) {
-      console.error("Error renaming category:", err);
-    }
-  };
-
   return (
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
@@ -319,7 +238,7 @@ export default function Sidebar({
           className={`border-2 border-foreground p-3 flex items-center justify-between cursor-pointer transition-all ${
             activeCategoryId === null
               ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--accent)]"
-              : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+              : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
           }`}
         >
           <div className="flex items-center space-x-3">
@@ -356,7 +275,6 @@ export default function Sidebar({
                     count={cardCounts[cat.id] || 0}
                     onClick={() => onSelectCategory(cat.id)}
                     onDelete={handleDeleteCategory}
-                    onRename={handleRenameCategory}
                   />
                 ))}
               </div>
@@ -378,7 +296,7 @@ export default function Sidebar({
             placeholder="NEW CATEGORY NAME"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
-            className="flex-1 bg-white border-2 border-foreground px-3 py-2 font-mono text-[10px] tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 bg-card border-2 border-foreground px-3 py-2 font-mono text-[10px] tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <button
             type="submit"
@@ -396,7 +314,7 @@ export default function Sidebar({
           * 02. SYSTEM LOGS
         </span>
         {uploadProgress ? (
-          <div className="border border-foreground/15 bg-white p-3 space-y-2">
+          <div className="border border-foreground/15 bg-card p-3 space-y-2">
             <div className="flex justify-between items-center text-[10px] font-mono">
               <span className="truncate max-w-[150px] uppercase font-bold text-accent">
                 {uploadProgress.filename}

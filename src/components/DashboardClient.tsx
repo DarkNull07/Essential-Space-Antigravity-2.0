@@ -44,6 +44,15 @@ export default function DashboardClient({
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [theme, setTheme] = useState(user.theme || user.selectedTheme);
 
+  // Synchronize state when initialCategories / initialCards change from server side (router.refresh())
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
+  useEffect(() => {
+    setCards(initialCards);
+  }, [initialCards]);
+
   // Dynamically update document element attributes on client side
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -89,6 +98,7 @@ export default function DashboardClient({
           user={{ ...user, selectedTheme: theme }}
           onThemeChange={setTheme}
           activeCategory={activeCategory}
+          categories={categories}
           cards={cards}
           onCardsChange={setCards}
           onUploadStart={(filename) => setUploadProgress({ filename, progress: 0 })}

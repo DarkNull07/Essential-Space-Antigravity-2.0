@@ -129,7 +129,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Login Card */}
-        <div className="w-full max-w-md bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] p-8 space-y-8">
+        <div className="w-full max-w-md bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] p-8 space-y-8">
           <div className="space-y-2">
             <span className="font-mono text-xs uppercase tracking-widest text-accent font-semibold block">
               * 02. AUTHENTICATION
