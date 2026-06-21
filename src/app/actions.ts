@@ -3,6 +3,7 @@
 import prisma from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { getAuthUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 // Create a new category
 export async function createCategory(name: string) {
@@ -140,8 +141,35 @@ export async function updateUserTheme(theme: string) {
   const user = await getAuthUser();
   await prisma.userProfile.update({
     where: { id: user.id },
-    data: { selectedTheme: theme },
+    data: { 
+      selectedTheme: theme,
+      theme: theme
+    },
   });
   revalidatePath("/");
+}
+
+// Delete user account and all data
+export async function deleteUserAccount() {
+  const user = await getAuthUser();
+
+  // Explicitly delete all Cards and Categories belonging to the target userId using separate 'deleteMany' transactions BEFORE deleting the UserProfile record.
+  await prisma.card.deleteMany({
+    where: { userId: user.id },
+  });
+
+  await prisma.category.deleteMany({
+    where: { userId: user.id },
+  });
+
+  const profile = await prisma.userProfile.delete({
+    where: { id: user.id },
+  });
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+
+  revalidatePath("/");
+  return profile;
 }
 

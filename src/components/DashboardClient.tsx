@@ -72,6 +72,7 @@ export default function DashboardClient({
           onSelectCategory={setActiveCategoryId}
           onCategoriesChange={setCategories}
           uploadProgress={uploadProgress}
+          theme={theme}
         />
         <Canvas
           user={{ ...user, selectedTheme: theme }}

@@ -5,14 +5,61 @@ interface LogoProps {
   size?: number;
   strokeColor?: string;
   dotColor?: string;
+  theme?: string;
 }
 
 export default function Logo({
   className = "",
   size = 24,
-  strokeColor = "currentColor",
+  strokeColor = "#FFFFFF", // Default to white for high contrast
   dotColor = "#EAB308", // Gold core matches the light-gold aesthetic
+  theme = "light-gold",
 }: LogoProps) {
+  const isLight = theme.startsWith("light-");
+
+  if (isLight) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+      >
+        {/* Dark themed background canvas for light theme matching essential_space_logo_2.svg */}
+        <rect width="24" height="24" rx="4" fill="#171717" />
+        
+        {/* Isometric box rods updated to high-contrast white */}
+        <path
+          d="M12 3L21 7.5L12 12L3 7.5Z"
+          stroke="#FFFFFF"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M3 7.5V16.5M12 12V21M21 7.5V16.5"
+          stroke="#FFFFFF"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M3 16.5L12 21L21 16.5"
+          stroke="#FFFFFF"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        
+        {/* Retained exact original yellow focal center point */}
+        <circle cx="12" cy="12" r="3.5" fill="#EAB308" />
+      </svg>
+    );
+  }
+
+  // Dark theme transparent logo layout - lines remain white (#FFFFFF)
   return (
     <svg
       width={size}
@@ -24,21 +71,21 @@ export default function Logo({
     >
       <path
         d="M12 3L21 7.5L12 12L3 7.5Z"
-        stroke={strokeColor}
+        stroke="#FFFFFF"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M3 7.5V16.5M12 12V21M21 7.5V16.5"
-        stroke={strokeColor}
+        stroke="#FFFFFF"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M3 16.5L12 21L21 16.5"
-        stroke={strokeColor}
+        stroke="#FFFFFF"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"

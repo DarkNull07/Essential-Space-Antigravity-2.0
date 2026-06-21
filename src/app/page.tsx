@@ -12,8 +12,8 @@ export default async function Home() {
   }
 
   const [categories, cards] = await Promise.all([
-    getCategories(),
-    getCards(),
+    getCategories(user.id),
+    getCards(user.id),
   ]);
 
   // Convert schema Card properties to match DashboardClient expectation

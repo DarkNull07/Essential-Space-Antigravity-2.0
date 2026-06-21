@@ -22,6 +22,7 @@ import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
 import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
+import Link from "next/link";
 
 interface Category {
   id: string;
@@ -36,6 +37,7 @@ interface SidebarProps {
   onSelectCategory: (id: string | null) => void;
   onCategoriesChange: (categories: Category[]) => void;
   uploadProgress: { filename: string; progress: number } | null;
+  theme?: string;
 }
 
 function SortableCategoryItem({
@@ -120,6 +122,7 @@ export default function Sidebar({
   onSelectCategory,
   onCategoriesChange,
   uploadProgress,
+  theme = "light-gold",
 }: SidebarProps) {
   const confirm = useConfirm();
   const [newCatName, setNewCatName] = useState("");
@@ -202,12 +205,18 @@ export default function Sidebar({
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
       <header className="flex justify-between items-end border-b border-foreground/10 pb-4 lg:h-16">
-        <div className="flex items-center space-x-3.5 w-full">
-          <Logo size={36} className="text-foreground flex-shrink-0" />
-          <span className="font-display font-bold uppercase tracking-wider text-2xl leading-none">
+        <Link
+          href="/"
+          onClick={(e) => {
+            onSelectCategory(null);
+          }}
+          className="flex items-center space-x-3.5 w-full cursor-pointer hover:opacity-90 transition-opacity"
+        >
+          <Logo size={36} className="text-foreground flex-shrink-0" theme={theme} />
+          <span className="font-display font-bold uppercase tracking-wider text-2xl leading-none text-foreground">
             Essential Space
           </span>
-        </div>
+        </Link>
       </header>
 
       {/* Category List */}

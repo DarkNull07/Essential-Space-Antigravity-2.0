@@ -10,19 +10,17 @@ export async function getCurrentUser() {
 }
 
 // Get all categories for current user
-export async function getCategories() {
-  const user = await getAuthUser();
+export async function getCategories(userId: string) {
   return prisma.category.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { order: "asc" },
   });
 }
 
 // Get all cards for current user
-export async function getCards() {
-  const user = await getAuthUser();
+export async function getCards(userId: string) {
   return prisma.card.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { order: "asc" },
   });
 }

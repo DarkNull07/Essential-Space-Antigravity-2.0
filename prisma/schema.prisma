@@ -12,6 +12,7 @@ model UserProfile {
   id            String     @id @default(uuid())
   email         String     @unique
   selectedTheme String     @default("light-gold")
+  theme         String     @default("light")
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   categories    Category[]
@@ -33,10 +34,10 @@ model Category {
 
 model Card {
   id          String      @id @default(uuid())
-  type        String      // "LINK", "TEXT", "IMAGE", "FILE"
+  type        String      // "TEXT", "CHECKLIST", "LINK", "API_KEY", "IMAGE", "FILE"
   title       String?     
   content     String      
-  metadata    Json?       // Stores image width/height, bytes, favicon, domain
+  metadata    Json?       // Stores image width/height, bytes, favicon, domain, or checklist items
   order       Int         
   categoryId  String?
   category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
