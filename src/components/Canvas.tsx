@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil } from "lucide-react";
+import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil, CheckSquare, Key } from "lucide-react";
 import Card from "./Card";
 import { createCard, updateCardsOrder, updateUserTheme, deleteUserAccount, renameCategory } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -186,10 +186,20 @@ export default function Canvas({
   };
 
   // New card form states
-  const [cardType, setCardType] = useState<"TEXT" | "LINK">("TEXT");
+  const [cardType, setCardType] = useState<"TEXT" | "LINK" | "CHECKLIST" | "API_KEY">("TEXT");
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-expanding textarea handler (Constraint 1)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [content, cardType]);
 
   useEffect(() => {
     setMounted(true);
@@ -360,6 +370,18 @@ export default function Canvas({
           domain,
           favicon,
         });
+      } else if (cardType === "CHECKLIST") {
+        const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
+        const checklistItems = lines.map((text, idx) => ({
+          id: `${Date.now()}-${idx}`,
+          text,
+          checked: false
+        }));
+        created = await createCard("CHECKLIST", content.trim(), catId, title.trim() || "Checklist", {
+          items: checklistItems
+        });
+      } else if (cardType === "API_KEY") {
+        created = await createCard("API_KEY", content.trim(), catId, title.trim() || "API Key", {});
       } else {
         created = await createCard("TEXT", content.trim(), catId, title.trim() || undefined);
       }
@@ -594,23 +616,24 @@ export default function Canvas({
 
       {/* Quick Add Form Section */}
       <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
-        <div className="flex justify-between items-center border-b border-foreground/10 pb-3">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
             * ADD CARD TO {activeCategory ? activeCategory.name : "INBOX"}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
                 setCardType("TEXT");
                 setContent("");
               }}
-              className={`px-3 py-1 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              type="button"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
                 cardType === "TEXT"
-                  ? "bg-foreground text-background shadow-[2px_2px_0px_0px_#FF5A36]"
-                  : "bg-background hover:bg-muted text-foreground"
+                  ? "bg-foreground text-background"
+                  : "bg-card hover:bg-muted text-foreground"
               }`}
             >
-              <Type className="w-3 h-3" />
+              <Type className="w-3.5 h-3.5" />
               Text Snippet
             </button>
             <button
@@ -618,14 +641,45 @@ export default function Canvas({
                 setCardType("LINK");
                 setContent("");
               }}
-              className={`px-3 py-1 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              type="button"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
                 cardType === "LINK"
-                  ? "bg-foreground text-background shadow-[2px_2px_0px_0px_#FF5A36]"
-                  : "bg-background hover:bg-muted text-foreground"
+                  ? "bg-foreground text-background"
+                  : "bg-card hover:bg-muted text-foreground"
               }`}
             >
-              <Link2 className="w-3 h-3" />
+              <Link2 className="w-3.5 h-3.5" />
               Web Link
+            </button>
+            <button
+              onClick={() => {
+                setCardType("CHECKLIST");
+                setContent("");
+              }}
+              type="button"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
+                cardType === "CHECKLIST"
+                  ? "bg-foreground text-background"
+                  : "bg-card hover:bg-muted text-foreground"
+              }`}
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              Checklist
+            </button>
+            <button
+              onClick={() => {
+                setCardType("API_KEY");
+                setContent("");
+              }}
+              type="button"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
+                cardType === "API_KEY"
+                  ? "bg-foreground text-background"
+                  : "bg-card hover:bg-muted text-foreground"
+              }`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              API Key
             </button>
           </div>
         </div>
@@ -646,21 +700,36 @@ export default function Canvas({
             </div>
             <div className="md:col-span-2 space-y-1">
               <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-                {cardType === "TEXT" ? "Snippet Text / Markdown" : "URL Address"}
+                {cardType === "TEXT" && "Snippet Text / Markdown"}
+                {cardType === "LINK" && "URL Address"}
+                {cardType === "CHECKLIST" && "Checklist Items (One per line)"}
+                {cardType === "API_KEY" && "Secret Key String"}
               </label>
-              <div className="flex gap-2">
-                <input
-                  type={cardType === "TEXT" ? "text" : "url"}
-                  placeholder={cardType === "TEXT" ? "ENTER NOTES OR CODE LOGS" : "https://example.com/resource"}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  required
-                  className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
-                />
+              <div className="flex gap-2 items-start">
+                {cardType === "TEXT" || cardType === "CHECKLIST" ? (
+                  <textarea
+                    ref={textareaRef}
+                    placeholder={cardType === "TEXT" ? "ENTER NOTES OR CODE LOGS" : "Item 1\nItem 2\nItem 3"}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    required
+                    rows={1}
+                    className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-[40px] overflow-hidden"
+                  />
+                ) : (
+                  <input
+                    type={cardType === "LINK" ? "url" : "text"}
+                    placeholder={cardType === "LINK" ? "https://example.com/resource" : "sk_live_..."}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    required
+                    className="flex-grow bg-background border-2 border-foreground px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+                  />
+                )}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer h-10 flex-shrink-0"
                 >
                   {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
                   COMMIT

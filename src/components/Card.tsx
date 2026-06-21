@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon } from "lucide-react";
-import { deleteCard } from "@/app/actions";
+import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2 } from "lucide-react";
+import { deleteCard, updateCard } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
-import { sanitizeTitle } from "@/lib/utils";
+import { sanitizeTitle, base64ToString, stringToBase64 } from "@/lib/utils";
+
 
 interface CardProps {
   card: {
@@ -22,6 +24,147 @@ interface CardProps {
 
 export default function Card({ card, onDelete }: CardProps) {
   const confirm = useConfirm();
+  
+  const [items, setItems] = useState<any[]>(() => {
+    if (card.type === "CHECKLIST" && card.metadata && Array.isArray(card.metadata.items)) {
+      return card.metadata.items;
+    }
+    return [];
+  });
+  const [newChecklistItemText, setNewChecklistItemText] = useState("");
+  const [revealKey, setRevealKey] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  // Notepad modal editor states
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+  const [notepadContent, setNotepadContent] = useState("");
+  const [notepadTitle, setNotepadTitle] = useState("");
+  const [savingNotepad, setSavingNotepad] = useState(false);
+
+  // Keep track of the request ref to avoid prop updates overriding active local edits (Constraint 3)
+  const pendingRequests = useRef(0);
+
+  useEffect(() => {
+    if (pendingRequests.current === 0 && card.type === "CHECKLIST" && card.metadata && Array.isArray(card.metadata.items)) {
+      setItems(card.metadata.items);
+    }
+  }, [card.metadata]);
+
+  const handleToggleChecklistItem = async (itemId: string) => {
+    // Instantly toggle local checkbox state visually to prevent desyncs/race conditions (Constraint 3)
+    const updatedItems = items.map((item) =>
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    );
+    setItems(updatedItems);
+
+    pendingRequests.current += 1;
+    try {
+      await updateCard(card.id, card.content, card.title, {
+        ...card.metadata,
+        items: updatedItems,
+      });
+    } catch (err) {
+      console.error("Failed to toggle checklist item:", err);
+      // Revert if no other requests are pending
+      if (pendingRequests.current === 1) {
+        setItems(card.metadata?.items || []);
+      }
+    } finally {
+      pendingRequests.current = Math.max(0, pendingRequests.current - 1);
+    }
+  };
+
+  const handleAddChecklistItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newChecklistItemText.trim();
+    if (!trimmed) return;
+
+    const newItem = {
+      id: `${Date.now()}-${items.length}`,
+      text: trimmed,
+      checked: false,
+    };
+
+    const updatedItems = [...items, newItem];
+    setItems(updatedItems);
+    setNewChecklistItemText("");
+
+    pendingRequests.current += 1;
+    try {
+      await updateCard(card.id, card.content, card.title, {
+        ...card.metadata,
+        items: updatedItems,
+      });
+    } catch (err) {
+      console.error("Failed to add checklist item:", err);
+      if (pendingRequests.current === 1) {
+        setItems(card.metadata?.items || []);
+      }
+    } finally {
+      pendingRequests.current = Math.max(0, pendingRequests.current - 1);
+    }
+  };
+
+  const handleCopyKey = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(card.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadTxt = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    let textToDownload = card.content;
+    
+    if (card.type === "FILE") {
+      textToDownload = base64ToString(card.content);
+    }
+    
+    const blob = new Blob([textToDownload], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${card.title || "untitled"}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveNotepad = async () => {
+    setSavingNotepad(true);
+    try {
+      let contentToSave = notepadContent;
+      let newMetadata = card.metadata;
+      if (card.type === "FILE") {
+        const bytes = new TextEncoder().encode(notepadContent);
+        contentToSave = "data:text/plain;base64," + stringToBase64(notepadContent);
+        newMetadata = {
+          ...card.metadata,
+          size: bytes.byteLength,
+          mimeType: "text/plain",
+        };
+      }
+      await updateCard(card.id, contentToSave, notepadTitle.trim() || null, newMetadata);
+      setIsNotepadOpen(false);
+    } catch (err) {
+      console.error("Failed to save notepad card:", err);
+      alert("Failed to save. Please try again.");
+    } finally {
+      setSavingNotepad(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isNotepadOpen) {
+        setIsNotepadOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isNotepadOpen]);
+
   const {
     attributes,
     listeners,
@@ -32,7 +175,7 @@ export default function Card({ card, onDelete }: CardProps) {
   } = useSortable({ id: card.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: isNotepadOpen ? undefined : CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
   };
@@ -193,21 +336,235 @@ export default function Card({ card, onDelete }: CardProps) {
             <a
               href={card.content}
               download
-              className="mt-3 w-full bg-background hover:bg-muted border border-foreground py-1 text-center font-mono text-[10px] uppercase tracking-wider transition-colors block"
+              className="mt-3 w-full bg-background hover:bg-muted border-2 border-foreground py-1 text-center font-mono text-[10px] uppercase tracking-wider transition-colors block font-semibold cursor-pointer"
             >
               Download File
             </a>
           </div>
         )}
+
+        {card.type === "CHECKLIST" && (
+          <div className="flex-1 flex flex-col justify-between h-full space-y-3">
+            <div className="space-y-2 flex-grow overflow-y-auto max-h-[160px] pr-1">
+              {card.title && (
+                <h4 className="font-sans font-bold text-sm uppercase tracking-tight line-clamp-1 border-b border-foreground/10 pb-1">
+                  {card.title}
+                </h4>
+              )}
+              {items.length === 0 ? (
+                <p className="font-mono text-[10px] text-muted-foreground italic">No items yet.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleToggleChecklistItem(item.id)}
+                      className="flex items-center space-x-2.5 cursor-pointer group/item py-0.5"
+                    >
+                      <div
+                        className={`w-4 h-4 border-2 border-foreground flex items-center justify-center transition-all ${
+                          item.checked ? "bg-accent text-white border-accent" : "bg-background"
+                        }`}
+                      >
+                        {item.checked && <Check className="w-3 h-3 stroke-[3px]" />}
+                      </div>
+                      <span
+                        className={`font-mono text-[11px] select-none break-all line-clamp-2 ${
+                          item.checked ? "line-through text-muted-foreground font-semibold" : "text-foreground"
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <form onSubmit={handleAddChecklistItem} className="flex gap-1.5 pt-2 border-t border-foreground/10">
+              <input
+                type="text"
+                placeholder="ADD ITEM..."
+                value={newChecklistItemText}
+                onChange={(e) => setNewChecklistItemText(e.target.value)}
+                className="flex-grow bg-background border-2 border-foreground px-2 py-1 font-mono text-[10px] focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-7 uppercase font-semibold"
+              />
+              <button
+                type="submit"
+                className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-2.5 font-display font-bold text-[9px] uppercase tracking-wider shadow-[1px_1px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[0.5px] hover:translate-y-[0.5px] transition-all flex items-center justify-center h-7 cursor-pointer"
+              >
+                ADD
+              </button>
+            </form>
+          </div>
+        )}
+
+        {card.type === "API_KEY" && (
+          <div className="flex-1 flex flex-col justify-between h-full space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-1.5">
+                <Key className="w-3.5 h-3.5 text-accent" />
+                <h4 className="font-sans font-bold text-sm uppercase tracking-tight line-clamp-1">
+                  {card.title || "API KEY"}
+                </h4>
+              </div>
+              <div className="flex items-center justify-between border-2 border-foreground bg-background p-2 font-mono text-xs select-all break-all shadow-[2px_2px_0px_0px_var(--foreground)]">
+                <span className="tracking-widest font-bold">
+                  {revealKey ? card.content : "••••••••••••••••"}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRevealKey(!revealKey);
+                }}
+                className="flex-1 bg-background hover:bg-muted border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] font-bold"
+              >
+                {revealKey ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" />
+                    HIDE
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5" />
+                    REVEAL
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleCopyKey}
+                className={`flex-1 border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] font-bold ${
+                  copied ? "bg-emerald-500 text-white border-emerald-600 shadow-none translate-x-[0.5px] translate-y-[0.5px]" : "bg-accent hover:bg-[#E04B28] text-white"
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    COPIED
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    COPY
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Delete Button (Visible on hover) */}
+      {/* Action Buttons (Visible on hover) */}
+      {(card.type === "TEXT" || card.type === "FILE") && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setNotepadTitle(card.title || "");
+            setNotepadContent(card.type === "FILE" ? base64ToString(card.content) : card.content);
+            setIsNotepadOpen(true);
+          }}
+          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          title="Open Notepad Editor"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {(card.type === "TEXT" || card.type === "FILE") && (
+        <button
+          onClick={handleDownloadTxt}
+          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          title="Download as .txt"
+        >
+          <Download className="w-3.5 h-3.5" />
+        </button>
+      )}
+
       <button
         onClick={handleDelete}
-        className="absolute bottom-2 right-2 bg-background hover:bg-accent text-foreground hover:text-white border border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px]"
+        className="absolute bottom-2 right-[8px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+        title="Delete Card"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>
+
+      {/* Notepad Editor Modal */}
+      {isNotepadOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 select-text"
+        >
+          <div className="bg-card border-4 border-foreground shadow-[8px_8px_0px_0px_var(--foreground)] w-full max-w-3xl h-[80vh] flex flex-col p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-foreground/10 pb-3">
+              <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">
+                * Notepad Editor / {card.type}
+              </span>
+              <button
+                onClick={() => setIsNotepadOpen(false)}
+                className="font-mono text-xs uppercase border-2 border-foreground px-2.5 py-0.5 hover:bg-muted cursor-pointer font-bold"
+              >
+                Close [Esc]
+              </button>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+                Document Title
+              </label>
+              <input
+                type="text"
+                placeholder="UNTITLED NOTE"
+                value={notepadTitle}
+                onChange={(e) => setNotepadTitle(e.target.value)}
+                className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0 space-y-1">
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+                Document Body
+              </label>
+              <textarea
+                placeholder="Start writing..."
+                value={notepadContent}
+                onChange={(e) => setNotepadContent(e.target.value)}
+                className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsNotepadOpen(false)}
+                className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNotepad}
+                disabled={savingNotepad}
+                className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center gap-1.5"
+              >
+                {savingNotepad ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    SAVING...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    SAVE CHANGES
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

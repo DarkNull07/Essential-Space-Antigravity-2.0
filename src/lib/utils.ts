@@ -71,3 +71,40 @@ export function sanitizeTitle(title: string | null, fallbackUrl: string): string
 
   return raw;
 }
+
+// Safe Base64 conversions using TextDecoder and TextEncoder
+export function base64ToString(base64: string): string {
+  try {
+    const cleanBase64 = base64.startsWith("data:") 
+      ? base64.split(",")[1] 
+      : base64;
+    const binaryString = atob(cleanBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch (err) {
+    console.error("base64ToString decoding error, falling back:", err);
+    try {
+      return decodeURIComponent(escape(atob(base64.split(",")[1] || base64)));
+    } catch {
+      return base64;
+    }
+  }
+}
+
+export function stringToBase64(str: string): string {
+  try {
+    const bytes = new TextEncoder().encode(str);
+    let binaryString = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binaryString += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binaryString);
+  } catch (err) {
+    console.error("stringToBase64 encoding error, falling back:", err);
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+}
+

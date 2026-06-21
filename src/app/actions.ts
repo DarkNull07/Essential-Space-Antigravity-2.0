@@ -55,7 +55,7 @@ export async function deleteCategory(id: string) {
 
 // Create a new card
 export async function createCard(
-  type: "LINK" | "TEXT" | "IMAGE" | "FILE",
+  type: "LINK" | "TEXT" | "IMAGE" | "FILE" | "CHECKLIST" | "API_KEY",
   content: string,
   categoryId: string | null,
   title?: string,
@@ -193,6 +193,42 @@ export async function renameCategory(id: string, name: string) {
   }
 
   const updated = await prisma.category.findUnique({
+    where: { id },
+  });
+
+  revalidatePath("/");
+  return updated!;
+}
+
+// Update an existing card's content, title, and metadata
+export async function updateCard(
+  id: string,
+  content: string,
+  title?: string | null,
+  metadata?: any
+) {
+  const user = await getAuthUser();
+
+  if (content.length > 1024 * 1024) {
+    throw new Error("Payload size limit exceeded (1MB)");
+  }
+
+  // Scope mutations securely to card id AND user id to prevent ID enumeration exploits
+  const result = await prisma.card.updateMany({
+    where: { id, userId: user.id },
+    data: {
+      content,
+      title: title !== undefined ? title : undefined,
+      metadata: metadata !== undefined ? metadata : undefined,
+    },
+  });
+
+  // Explicit updateMany count verification (Constraint 2)
+  if (result.count === 0) {
+    throw new Error("Unauthorized or Card Not Found");
+  }
+
+  const updated = await prisma.card.findUnique({
     where: { id },
   });
 
