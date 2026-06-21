@@ -192,6 +192,12 @@ export default function Canvas({
   const [submitting, setSubmitting] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dragCounter = useRef(0);
+  const activeCategoryIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeCategoryIdRef.current = activeCategory ? activeCategory.id : null;
+  }, [activeCategory]);
 
   // Auto-expanding textarea handler (Constraint 1)
   useEffect(() => {
@@ -216,104 +222,255 @@ export default function Canvas({
     })
   );
 
-  // Drag over window listener for native files
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  };
+
+  // Drag over window listener for native files (Phase 5)
   useEffect(() => {
-    const handleDragOver = (e: DragEvent) => {
+    const handleDragEnter = (e: DragEvent) => {
+      const isFileDrag = e.dataTransfer?.types.includes("Files");
+      if (!isFileDrag) return;
+
+      const target = e.target as HTMLElement;
+      const isInputOrTextarea = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isInputOrTextarea) return;
+
       e.preventDefault();
-      setIsDragActive(true);
+      dragCounter.current += 1;
+      if (dragCounter.current === 1) {
+        setIsDragActive(true);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      const isFileDrag = e.dataTransfer?.types.includes("Files");
+      if (!isFileDrag) return;
+
+      const target = e.target as HTMLElement;
+      const isInputOrTextarea = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isInputOrTextarea) return;
+
+      e.preventDefault();
     };
 
     const handleDragLeave = (e: DragEvent) => {
+      const isFileDrag = e.dataTransfer?.types.includes("Files");
+      if (!isFileDrag) return;
+
+      const target = e.target as HTMLElement;
+      const isInputOrTextarea = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isInputOrTextarea) return;
+
       e.preventDefault();
-      // Only set inactive if cursor actually leaves the window
-      if (e.clientX === 0 && e.clientY === 0) {
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
         setIsDragActive(false);
       }
     };
 
     const handleDrop = async (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      const isInputOrTextarea = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isInputOrTextarea) {
+        return;
+      }
+      
       e.preventDefault();
       setIsDragActive(false);
+      dragCounter.current = 0;
 
       const files = e.dataTransfer?.files;
       if (!files || files.length === 0) return;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      const fileArray = Array.from(files);
 
-        if (file.size > 750000) {
-          alert(`File "${file.name}" exceeds the size limit (750KB). Please upload a smaller asset.`);
-          continue;
+      // Payload Safe Guardrails: 10MB per file check
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      for (const file of fileArray) {
+        if (file.size > maxSize) {
+          await confirm({
+            title: "Payload Limit Exceeded",
+            message: `File "${file.name}" (${formatBytes(file.size)}) exceeds the maximum size limit of 10MB. Operation aborted.`,
+            confirmLabel: "Understood",
+          });
+          return;
         }
+      }
 
-        onUploadStart(file.name);
+      onUploadStart(`${fileArray.length} Assets`);
+      onUploadProgress(10);
 
-        // Read file contents
-        const reader = new FileReader();
+      try {
+        const catId = activeCategoryIdRef.current;
+        const uploadPromises = fileArray.map((file) => {
+          return new Promise<any>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const resultStr = event.target?.result as string;
+              try {
+                if (file.type.startsWith("image/")) {
+                  const img = new Image();
+                  img.onload = async () => {
+                    try {
+                      const created = await createCard("IMAGE", resultStr, catId, file.name, {
+                        size: file.size,
+                        width: img.width,
+                        height: img.height,
+                        mimeType: file.type,
+                      });
+                      resolve(created);
+                    } catch (err) {
+                      reject(err);
+                    }
+                  };
+                  img.onerror = () => reject(new Error("Failed to load image element"));
+                  img.src = resultStr;
+                } else {
+                  const created = await createCard("FILE", resultStr, catId, file.name, {
+                    size: file.size,
+                    mimeType: file.type,
+                  });
+                  resolve(created);
+                }
+              } catch (err) {
+                reject(err);
+              }
+            };
+            reader.onerror = () => reject(new Error("File reading failed"));
+            reader.readAsDataURL(file);
+          });
+        });
 
-        // Simulate upload progress
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-          progress += 10;
-          onUploadProgress(Math.min(progress, 90));
-        }, 100);
+        onUploadProgress(40);
+        const createdCards = await Promise.all(uploadPromises);
+        onUploadProgress(80);
 
-        reader.onload = async (event) => {
-          clearInterval(progressInterval);
-          onUploadProgress(100);
-
-          const resultStr = event.target?.result as string;
-          const catId = activeCategory ? activeCategory.id : null;
-
-          try {
-            if (file.type.startsWith("image/")) {
-              // Extract image dimensions
-              const img = new Image();
-              img.onload = async () => {
-                const created = await createCard("IMAGE", resultStr, catId, file.name, {
-                  size: file.size,
-                  width: img.width,
-                  height: img.height,
-                  mimeType: file.type,
-                });
-                onCardsChange((prev) => [...prev, created]);
-                onUploadEnd();
-              };
-              img.src = resultStr;
-            } else {
-              // Regular document file
-              const created = await createCard("FILE", resultStr, catId, file.name, {
-                size: file.size,
-                mimeType: file.type,
-              });
-              onCardsChange((prev) => [...prev, created]);
-              onUploadEnd();
-            }
-          } catch (err) {
-            console.error("Error creating dropped card:", err);
-            onUploadEnd();
-          }
-        };
-
-        if (file.type.startsWith("image/")) {
-          reader.readAsDataURL(file);
-        } else {
-          // Read non-images as data URL too (e.g. PDF/text base64 encoding)
-          reader.readAsDataURL(file);
-        }
+        onCardsChange((prev) => [...prev, ...createdCards]);
+        onUploadProgress(100);
+      } catch (err) {
+        console.error("Error uploading dropped assets:", err);
+        await confirm({
+          title: "Upload Failed",
+          message: "An error occurred during file upload. Some assets might not have been saved.",
+          confirmLabel: "Close",
+        });
+      } finally {
+        onUploadEnd();
       }
     };
 
+    window.addEventListener("dragenter", handleDragEnter);
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("dragleave", handleDragLeave);
     window.addEventListener("drop", handleDrop);
 
     return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [activeCategory, onCardsChange, onUploadStart, onUploadProgress, onUploadEnd]);
+  }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd]);
+
+  // Clipboard Screenshot Paste Handler (Phase 5)
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      // Focus Exclusion check
+      const activeEl = document.activeElement;
+      if (activeEl && (
+        activeEl.tagName === "INPUT" || 
+        activeEl.tagName === "TEXTAREA" || 
+        activeEl.hasAttribute("contenteditable") ||
+        (activeEl as HTMLElement).isContentEditable
+      )) {
+        return; // standard text copy-pasting functions normally
+      }
+
+      const files = e.clipboardData?.files;
+      if (!files || files.length === 0) return;
+
+      const fileArray = Array.from(files).filter(file => file.type.startsWith("image/"));
+      if (fileArray.length === 0) return;
+
+      e.preventDefault();
+
+      // Payload Safe Guardrails: 10MB per file check
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      for (const file of fileArray) {
+        if (file.size > maxSize) {
+          await confirm({
+            title: "Payload Limit Exceeded",
+            message: `Pasted screenshot "${file.name}" (${formatBytes(file.size)}) exceeds the maximum size limit of 10MB. Operation aborted.`,
+            confirmLabel: "Understood",
+          });
+          return;
+        }
+      }
+
+      onUploadStart(`${fileArray.length} Pasted Assets`);
+      onUploadProgress(20);
+
+      try {
+        const catId = activeCategoryIdRef.current;
+        const uploadPromises = fileArray.map((file) => {
+          return new Promise<any>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const resultStr = event.target?.result as string;
+              try {
+                const img = new Image();
+                img.onload = async () => {
+                  try {
+                    const created = await createCard("IMAGE", resultStr, catId, `Pasted Image - ${new Date().toLocaleTimeString()}`, {
+                      size: file.size,
+                      width: img.width,
+                      height: img.height,
+                      mimeType: file.type,
+                    });
+                    resolve(created);
+                  } catch (err) {
+                    reject(err);
+                  }
+                };
+                img.onerror = () => reject(new Error("Failed to load image element"));
+                img.src = resultStr;
+              } catch (err) {
+                reject(err);
+              }
+            };
+            reader.onerror = () => reject(new Error("File reading failed"));
+            reader.readAsDataURL(file);
+          });
+        });
+
+        onUploadProgress(50);
+        const createdCards = await Promise.all(uploadPromises);
+        onUploadProgress(80);
+
+        onCardsChange((prev) => [...prev, ...createdCards]);
+        onUploadProgress(100);
+        router.refresh();
+      } catch (err) {
+        console.error("Error uploading pasted assets:", err);
+        await confirm({
+          title: "Paste Upload Failed",
+          message: "An error occurred during paste upload.",
+          confirmLabel: "Close",
+        });
+      } finally {
+        onUploadEnd();
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => {
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd, router]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
