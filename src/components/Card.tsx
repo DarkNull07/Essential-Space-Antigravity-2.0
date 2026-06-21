@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2 } from "lucide-react";
@@ -37,8 +38,6 @@ export default function Card({ card, onDelete }: CardProps) {
   
   // Notepad modal editor states
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
-  const [notepadContent, setNotepadContent] = useState("");
-  const [notepadTitle, setNotepadTitle] = useState("");
   const [savingNotepad, setSavingNotepad] = useState(false);
 
   // Keep track of the request ref to avoid prop updates overriding active local edits (Constraint 3)
@@ -131,21 +130,21 @@ export default function Card({ card, onDelete }: CardProps) {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveNotepad = async () => {
+  const handleSaveNotepad = async (title: string, content: string) => {
     setSavingNotepad(true);
     try {
-      let contentToSave = notepadContent;
+      let contentToSave = content;
       let newMetadata = card.metadata;
       if (card.type === "FILE") {
-        const bytes = new TextEncoder().encode(notepadContent);
-        contentToSave = "data:text/plain;base64," + stringToBase64(notepadContent);
+        const bytes = new TextEncoder().encode(content);
+        contentToSave = "data:text/plain;base64," + stringToBase64(content);
         newMetadata = {
           ...card.metadata,
           size: bytes.byteLength,
           mimeType: "text/plain",
         };
       }
-      await updateCard(card.id, contentToSave, notepadTitle.trim() || null, newMetadata);
+      await updateCard(card.id, contentToSave, title.trim() || null, newMetadata);
       setIsNotepadOpen(false);
     } catch (err) {
       console.error("Failed to save notepad card:", err);
@@ -155,15 +154,6 @@ export default function Card({ card, onDelete }: CardProps) {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isNotepadOpen) {
-        setIsNotepadOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isNotepadOpen]);
 
   const {
     attributes,
@@ -461,8 +451,6 @@ export default function Card({ card, onDelete }: CardProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setNotepadTitle(card.title || "");
-            setNotepadContent(card.type === "FILE" ? base64ToString(card.content) : card.content);
             setIsNotepadOpen(true);
           }}
           className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
@@ -492,79 +480,148 @@ export default function Card({ card, onDelete }: CardProps) {
 
       {/* Notepad Editor Modal */}
       {isNotepadOpen && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 select-text"
-        >
-          <div className="bg-card border-4 border-foreground shadow-[8px_8px_0px_0px_var(--foreground)] w-full max-w-3xl h-[80vh] flex flex-col p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-foreground/10 pb-3">
-              <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">
-                * Notepad Editor / {card.type}
-              </span>
-              <button
-                onClick={() => setIsNotepadOpen(false)}
-                className="font-mono text-xs uppercase border-2 border-foreground px-2.5 py-0.5 hover:bg-muted cursor-pointer font-bold"
-              >
-                Close [Esc]
-              </button>
-            </div>
-            
-            <div className="space-y-1">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-                Document Title
-              </label>
-              <input
-                type="text"
-                placeholder="UNTITLED NOTE"
-                value={notepadTitle}
-                onChange={(e) => setNotepadTitle(e.target.value)}
-                className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
-              />
-            </div>
-
-            <div className="flex-1 flex flex-col min-h-0 space-y-1">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-                Document Body
-              </label>
-              <textarea
-                placeholder="Start writing..."
-                value={notepadContent}
-                onChange={(e) => setNotepadContent(e.target.value)}
-                className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsNotepadOpen(false)}
-                className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveNotepad}
-                disabled={savingNotepad}
-                className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center gap-1.5"
-              >
-                {savingNotepad ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    SAVING...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    SAVE CHANGES
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <NotepadModal
+          isOpen={isNotepadOpen}
+          initialTitle={card.title || ""}
+          initialContent={card.type === "FILE" ? base64ToString(card.content) : card.content}
+          cardType={card.type}
+          saving={savingNotepad}
+          onSave={handleSaveNotepad}
+          onClose={() => setIsNotepadOpen(false)}
+        />
       )}
     </div>
+  );
+}
+
+interface NotepadModalProps {
+  isOpen: boolean;
+  initialTitle: string;
+  initialContent: string;
+  cardType: string;
+  saving: boolean;
+  onSave: (title: string, content: string) => Promise<void>;
+  onClose: () => void;
+}
+
+function NotepadModal({
+  isOpen,
+  initialTitle,
+  initialContent,
+  cardType,
+  saving,
+  onSave,
+  onClose,
+}: NotepadModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted || typeof window === "undefined" || !document.body) {
+    return null;
+  }
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSave(title, content);
+  };
+
+  return createPortal(
+    <div
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 select-text"
+    >
+      <div className="bg-card border-4 border-foreground shadow-[8px_8px_0px_0px_var(--foreground)] w-full max-w-3xl h-[80vh] flex flex-col p-6 space-y-4">
+        <div className="flex justify-between items-center border-b border-foreground/10 pb-3">
+          <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">
+            * Notepad Editor / {cardType}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="font-mono text-xs uppercase border-2 border-foreground px-2.5 py-0.5 hover:bg-muted cursor-pointer font-bold"
+          >
+            Close [Esc]
+          </button>
+        </div>
+        
+        <div className="space-y-1">
+          <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+            Document Title
+          </label>
+          <input
+            type="text"
+            placeholder="UNTITLED NOTE"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+          />
+        </div>
+
+        <div className="flex-1 flex flex-col min-h-0 space-y-1">
+          <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+            Document Body
+          </label>
+          <textarea
+            placeholder="Start writing..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
+          />
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center gap-1.5"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                SAVING...
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                SAVE CHANGES
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
