@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { getCurrentUser } from "@/lib/queries";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -28,13 +29,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+  const theme = user?.theme || user?.selectedTheme || "light-gold";
+
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} data-theme={theme}>
       <body className="antialiased bg-background text-foreground font-sans">
         {children}
       </body>

@@ -129,7 +129,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Login Card */}
-        <div className="w-full max-w-md bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_#0B0C10] p-8 space-y-8">
+        <div className="w-full max-w-md bg-white border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] p-8 space-y-8">
           <div className="space-y-2">
             <span className="font-mono text-xs uppercase tracking-widest text-accent font-semibold block">
               * 02. AUTHENTICATION
@@ -210,7 +210,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50"
+              className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
             >
               {isSignUp
                 ? (loading ? "Creating Account..." : "Create Account")
@@ -261,7 +261,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-background hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            className="w-full bg-background hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
           >
             {/* Google Icon SVG */}
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas";
 import { ConfirmProvider } from "./ConfirmDialog";
@@ -9,6 +9,7 @@ interface UserProfile {
   id: string;
   email: string;
   selectedTheme: string;
+  theme?: string;
 }
 
 interface Category {
@@ -41,7 +42,17 @@ export default function DashboardClient({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [cards, setCards] = useState<Card[]>(initialCards);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [theme, setTheme] = useState(user.selectedTheme);
+  const [theme, setTheme] = useState(user.theme || user.selectedTheme);
+
+  // Dynamically update document element attributes on client side
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    if (theme.startsWith("dark-")) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   // Native drag-and-drop progress status
   const [uploadProgress, setUploadProgress] = useState<{

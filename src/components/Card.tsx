@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon } from "lucide-react";
 import { deleteCard } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
+import { sanitizeTitle } from "@/lib/utils";
 
 interface CardProps {
   card: {
@@ -65,7 +66,7 @@ export default function Card({ card, onDelete }: CardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border-2 border-foreground shadow-[4px_4px_0px_0px_#0B0C10] flex flex-col group relative overflow-hidden select-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#0B0C10] transition-all"
+      className="bg-white border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)] flex flex-col group relative overflow-hidden select-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--foreground)] transition-all"
     >
       {/* Drag Handle Top Bar */}
       <div
@@ -104,7 +105,7 @@ export default function Card({ card, onDelete }: CardProps) {
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <h4 className="font-sans font-bold text-sm uppercase tracking-tight line-clamp-2">
-                  {card.title || card.content}
+                  {sanitizeTitle(card.title, card.content)}
                 </h4>
                 <a
                   href={card.content}
@@ -203,7 +204,7 @@ export default function Card({ card, onDelete }: CardProps) {
       {/* Delete Button (Visible on hover) */}
       <button
         onClick={handleDelete}
-        className="absolute bottom-2 right-2 bg-background hover:bg-accent text-foreground hover:text-white border border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[0.5px] hover:translate-y-[0.5px]"
+        className="absolute bottom-2 right-2 bg-background hover:bg-accent text-foreground hover:text-white border border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px]"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>

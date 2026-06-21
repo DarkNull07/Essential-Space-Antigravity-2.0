@@ -173,3 +173,30 @@ export async function deleteUserAccount() {
   return profile;
 }
 
+// Rename category with secure user ownership scoping
+export async function renameCategory(id: string, name: string) {
+  const user = await getAuthUser();
+
+  // Scope mutation using both category id AND active user id to prevent ID enumeration exploits
+  const result = await prisma.category.updateMany({
+    where: {
+      id,
+      userId: user.id,
+    },
+    data: {
+      name,
+    },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Category not found or unauthorized");
+  }
+
+  const updated = await prisma.category.findUnique({
+    where: { id },
+  });
+
+  revalidatePath("/");
+  return updated!;
+}
+

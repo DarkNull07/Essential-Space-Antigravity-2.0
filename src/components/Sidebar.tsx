@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -18,11 +18,11 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
-import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
+import { createCategory, deleteCategory, updateCategoriesOrder, renameCategory } from "@/app/actions";
 import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
 import Link from "next/link";
+import { Folder, FolderOpen, Plus, Trash2, Loader2, Pencil } from "lucide-react";
 
 interface Category {
   id: string;
@@ -46,12 +46,14 @@ function SortableCategoryItem({
   count,
   onClick,
   onDelete,
+  onRename,
 }: {
   category: Category;
   isActive: boolean;
   count: number;
   onClick: () => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, newName: string) => Promise<void>;
 }) {
   const {
     attributes,
@@ -62,10 +64,48 @@ function SortableCategoryItem({
     isDragging,
   } = useSortable({ id: category.id });
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(category.name);
+
+  // Focus ergonomics support
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  };
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === category.name) {
+      setEditName(category.name);
+      setIsEditing(false);
+      return;
+    }
+    
+    try {
+      await onRename(category.id, trimmed);
+    } catch (err) {
+      console.error("Failed to rename:", err);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      setEditName(category.name);
+      setIsEditing(false);
+    }
   };
 
   return (
@@ -74,18 +114,53 @@ function SortableCategoryItem({
       style={style}
       className={`border-2 border-foreground p-3 flex justify-between items-center transition-all ${
         isActive
-          ? "bg-accent text-white shadow-[2px_2px_0px_0px_#0B0C10]"
-          : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_#0B0C10]"
+          ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)]"
+          : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)]"
       }`}
     >
       {/* Clickable Area for Selection & Drag */}
-      <div className="flex items-center space-x-3 flex-1 min-w-0" onClick={onClick}>
+      <div className="flex items-center space-x-3 flex-1 min-w-0 group/item" onClick={onClick}>
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1">
           {isActive ? <FolderOpen className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
         </div>
-        <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
-          {category.name}
-        </span>
+        
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={handleSaveEdit}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onMouseDown={(e) => {
+              // Stop propagation to prevent DnD sensors from hijacking input focus/click ergonomics
+              e.stopPropagation();
+            }}
+            className="flex-1 bg-background text-foreground border border-foreground/30 px-1.5 py-0.5 font-display font-semibold text-xs tracking-wider uppercase focus:outline-none focus:border-accent"
+            autoFocus
+          />
+        ) : (
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
+            <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
+              {category.name}
+            </span>
+            <button
+              onClick={handleStartEdit}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              className="opacity-0 group-hover/item:opacity-100 p-0.5 hover:text-accent transition-all cursor-pointer text-muted-foreground"
+              title="Rename Category"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         <span
           className={`font-mono text-[9px] px-1.5 py-0.5 border ${
             isActive
@@ -102,6 +177,9 @@ function SortableCategoryItem({
         onClick={(e) => {
           e.stopPropagation();
           onDelete(category.id);
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
         }}
         className={`p-1 border border-transparent transition-all rounded ${
           isActive
@@ -201,6 +279,16 @@ export default function Sidebar({
     }
   };
 
+  const handleRenameCategory = async (id: string, newName: string) => {
+    try {
+      const updated = await renameCategory(id, newName);
+      const updatedList = categories.map((c) => (c.id === id ? updated : c));
+      onCategoriesChange(updatedList);
+    } catch (err) {
+      console.error("Error renaming category:", err);
+    }
+  };
+
   return (
     <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
@@ -230,8 +318,8 @@ export default function Sidebar({
           onClick={() => onSelectCategory(null)}
           className={`border-2 border-foreground p-3 flex items-center justify-between cursor-pointer transition-all ${
             activeCategoryId === null
-              ? "bg-foreground text-background shadow-[2px_2px_0px_0px_#FF5A36]"
-              : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_#0B0C10] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+              ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--accent)]"
+              : "bg-white hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
           }`}
         >
           <div className="flex items-center space-x-3">
@@ -268,6 +356,7 @@ export default function Sidebar({
                     count={cardCounts[cat.id] || 0}
                     onClick={() => onSelectCategory(cat.id)}
                     onDelete={handleDeleteCategory}
+                    onRename={handleRenameCategory}
                   />
                 ))}
               </div>
@@ -294,7 +383,7 @@ export default function Sidebar({
           <button
             type="submit"
             disabled={addingCat}
-            className="bg-accent text-white border-2 border-foreground p-2.5 shadow-[2px_2px_0px_0px_#0B0C10] hover:shadow-[1px_1px_0px_0px_#0B0C10] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center"
+            className="bg-accent text-white border-2 border-foreground p-2.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer"
           >
             {addingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           </button>

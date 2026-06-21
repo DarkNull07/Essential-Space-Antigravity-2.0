@@ -21,6 +21,7 @@ import Card from "./Card";
 import { createCard, updateCardsOrder, updateUserTheme, deleteUserAccount } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
+import { sanitizeTitle } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -326,7 +327,9 @@ export default function Canvas({
         }
         const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
-        created = await createCard("LINK", content.trim(), catId, title.trim() || domain, {
+        const sanitizedTitle = sanitizeTitle(title.trim() || null, content.trim());
+
+        created = await createCard("LINK", content.trim(), catId, sanitizedTitle, {
           domain,
           favicon,
         });
