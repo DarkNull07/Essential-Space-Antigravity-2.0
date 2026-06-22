@@ -99,6 +99,7 @@ export default function DashboardClient({
           theme={theme}
         />
         <Canvas
+          currentTheme={theme}
           user={{ ...user, selectedTheme: theme }}
           onThemeChange={setTheme}
           activeCategory={activeCategory}

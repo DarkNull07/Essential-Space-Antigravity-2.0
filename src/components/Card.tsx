@@ -10,6 +10,18 @@ import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle, base64ToString, stringToBase64, getDomain } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
+// Only allow safe URL schemes in hrefs to block javascript:/data: stored-XSS.
+function safeExternalHref(raw: string | null | undefined): string {
+  if (!raw) return "#";
+  const trimmed = raw.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^mailto:/i.test(trimmed)) return trimmed;
+  // Anything else that declares a scheme (javascript:, data:, vbscript:…) is rejected.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return "#";
+  // Schemeless input like "example.com/path" → treat as https.
+  return `https://${trimmed}`;
+}
+
 
 interface CardProps {
   card: {
@@ -496,7 +508,7 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
                 </div>
 
                 <a
-                  href={card.content}
+                  href={safeExternalHref(card.content)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1 border border-foreground/10 hover:border-accent hover:text-accent transition-colors bg-background flex-shrink-0"
@@ -1182,7 +1194,7 @@ function InlineLinkWidget({ url }: { url: string }) {
       </div>
 
       <a
-        href={url}
+        href={safeExternalHref(url)}
         target="_blank"
         rel="noopener noreferrer"
         className={`p-2 flex items-center justify-center rounded-none flex-shrink-0 transition-colors ${

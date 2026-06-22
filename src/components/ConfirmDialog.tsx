@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 interface ConfirmOptions {
   title: string;
@@ -16,40 +16,34 @@ interface ConfirmContextType {
 const ConfirmContext = createContext<ConfirmContextType | null>(null);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [options, setOptions] = useState<ConfirmOptions>({
-    title: "Confirm Action",
-    message: "Are you sure you want to proceed?",
-  });
+  const [queue, setQueue] = useState<
+    Array<{ options: ConfirmOptions; resolve: (value: boolean) => void }>
+  >([]);
 
-  const resolveRef = useRef<((value: boolean) => void) | null>(null);
+  const current = queue[0] || null;
 
   const confirm = (options: ConfirmOptions): Promise<boolean> => {
-    setOptions(options);
-    setIsOpen(true);
     return new Promise<boolean>((resolve) => {
-      resolveRef.current = resolve;
+      setQueue((prev) => [...prev, { options, resolve }]);
     });
   };
 
-  const handleCancel = () => {
-    setIsOpen(false);
-    if (resolveRef.current) {
-      resolveRef.current(false);
-    }
+  const settle = (value: boolean) => {
+    setQueue((prev) => {
+      if (prev.length === 0) return prev;
+      const [head, ...rest] = prev;
+      head.resolve(value);
+      return rest;
+    });
   };
 
-  const handleConfirm = () => {
-    setIsOpen(false);
-    if (resolveRef.current) {
-      resolveRef.current(true);
-    }
-  };
+  const handleCancel = () => settle(false);
+  const handleConfirm = () => settle(true);
 
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
-      {isOpen && (
+      {current && (
         <div
           data-portal="true"
           onClick={(e) => {
@@ -63,10 +57,10 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 * 03. CONFIRMATION
               </span>
               <h3 className="font-display font-bold text-xl uppercase tracking-tight text-foreground">
-                {options.title}
+                {current.options.title}
               </h3>
               <p className="font-sans text-xs text-muted-foreground leading-relaxed">
-                {options.message}
+                {current.options.message}
               </p>
             </div>
 
@@ -75,13 +69,13 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 onClick={handleCancel}
                 className="font-mono text-xs uppercase border-2 border-foreground bg-background text-foreground px-4 py-2.5 font-bold hover:bg-muted transition-all active:translate-x-[1px] active:translate-y-[1px]"
               >
-                {options.cancelLabel || "Cancel"}
+                {current.options.cancelLabel || "Cancel"}
               </button>
               <button
                 onClick={handleConfirm}
                 className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:shadow-[1px_1px_0px_0px_var(--foreground,#000)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
               >
-                {options.confirmLabel || "Confirm"}
+                {current.options.confirmLabel || "Confirm"}
               </button>
             </div>
           </div>

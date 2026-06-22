@@ -51,6 +51,7 @@ interface CanvasProps {
     email: string;
     selectedTheme: string;
   };
+  currentTheme: string;
   onThemeChange: (theme: string) => void;
   activeCategory: Category | null;
   categories: Category[];
@@ -63,6 +64,7 @@ interface CanvasProps {
 
 export default function Canvas({
   user,
+  currentTheme,
   onThemeChange,
   activeCategory,
   categories,
@@ -114,7 +116,7 @@ export default function Canvas({
     if (!activeCategory || renaming) return;
     const trimmed = renameName.trim();
     if (!trimmed) return;
-    
+
     setRenaming(true);
     try {
       await renameCategory(activeCategory.id, trimmed);
@@ -149,7 +151,7 @@ export default function Canvas({
     const dataStr = JSON.stringify({ categories: [], cards }, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const exportFileDefaultName = 'essential_space_backup.json';
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -170,10 +172,10 @@ export default function Canvas({
       reader.onload = async (event) => {
         try {
           const data = JSON.parse(event.target?.result as string);
-          
+
           // Structured placeholder handler for safe build
           console.log("Import data payload received:", data);
-          
+
           // Neo-Brutalist confirmation dialog preview
           const confirmed = await confirm({
             title: "Import Data",
@@ -205,7 +207,7 @@ export default function Canvas({
       confirmLabel: "Delete Account",
       cancelLabel: "Keep Account",
     });
-    
+
     if (confirmed) {
       try {
         await deleteUserAccount();
@@ -353,7 +355,7 @@ export default function Canvas({
       if (isInputOrTextarea) {
         return;
       }
-      
+
       e.preventDefault();
       setIsDragActive(false);
       dragCounter.current = 0;
@@ -381,7 +383,7 @@ export default function Canvas({
 
       try {
         const catId = activeCategoryIdRef.current;
-        const uploadPromises = fileArray.map((file) => {
+        const uploadOne = (file: File): Promise<any> => {
           return new Promise<any>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -418,14 +420,36 @@ export default function Canvas({
             reader.onerror = () => reject(new Error("File reading failed"));
             reader.readAsDataURL(file);
           });
-        });
+        };
 
+        // Upload sequentially so the server assigns `order` correctly
+        // (parallel uploads race on count()), and track per-file failures.
         onUploadProgress(40);
-        const createdCards = await Promise.all(uploadPromises);
+        const createdCards: any[] = [];
+        const failed: string[] = [];
+        for (let i = 0; i < fileArray.length; i++) {
+          try {
+            createdCards.push(await uploadOne(fileArray[i]));
+          } catch (err) {
+            console.error(`Failed to upload "${fileArray[i].name}":`, err);
+            failed.push(fileArray[i].name);
+          }
+          onUploadProgress(40 + Math.round(((i + 1) / fileArray.length) * 40));
+        }
         onUploadProgress(80);
 
-        onCardsChange((prev) => [...prev, ...createdCards]);
+        if (createdCards.length > 0) {
+          onCardsChange((prev) => [...prev, ...createdCards]);
+        }
         onUploadProgress(100);
+
+        if (failed.length > 0) {
+          await confirm({
+            title: "Some Uploads Failed",
+            message: `${createdCards.length} saved, ${failed.length} failed: ${failed.join(", ")}`,
+            confirmLabel: "Close",
+          });
+        }
       } catch (err) {
         console.error("Error uploading dropped assets:", err);
         await confirm({
@@ -457,8 +481,8 @@ export default function Canvas({
       // Focus Exclusion check
       const activeEl = document.activeElement;
       if (activeEl && (
-        activeEl.tagName === "INPUT" || 
-        activeEl.tagName === "TEXTAREA" || 
+        activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
         activeEl.hasAttribute("contenteditable") ||
         (activeEl as HTMLElement).isContentEditable
       )) {
@@ -491,7 +515,7 @@ export default function Canvas({
 
       try {
         const catId = activeCategoryIdRef.current;
-        const uploadPromises = fileArray.map((file) => {
+        const uploadOne = (file: File): Promise<any> => {
           return new Promise<any>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -520,15 +544,35 @@ export default function Canvas({
             reader.onerror = () => reject(new Error("File reading failed"));
             reader.readAsDataURL(file);
           });
-        });
+        };
 
+        // Upload sequentially (correct `order`) and track per-file failures.
         onUploadProgress(50);
-        const createdCards = await Promise.all(uploadPromises);
+        const createdCards: any[] = [];
+        const failed: string[] = [];
+        for (let i = 0; i < fileArray.length; i++) {
+          try {
+            createdCards.push(await uploadOne(fileArray[i]));
+          } catch (err) {
+            console.error(`Failed to upload pasted "${fileArray[i].name}":`, err);
+            failed.push(fileArray[i].name);
+          }
+        }
         onUploadProgress(80);
 
-        onCardsChange((prev) => [...prev, ...createdCards]);
+        if (createdCards.length > 0) {
+          onCardsChange((prev) => [...prev, ...createdCards]);
+        }
         onUploadProgress(100);
         router.refresh();
+
+        if (failed.length > 0) {
+          await confirm({
+            title: "Some Pastes Failed",
+            message: `${createdCards.length} saved, ${failed.length} failed.`,
+            confirmLabel: "Close",
+          });
+        }
       } catch (err) {
         console.error("Error uploading pasted assets:", err);
         await confirm({
@@ -585,6 +629,12 @@ export default function Canvas({
       router.refresh();
     } catch (err) {
       console.error("Failed to save reordered cards:", err);
+      onCardsChange(cards); // revert the optimistic reorder
+      await confirm({
+        title: "Reorder Failed",
+        message: "Your new card order couldn't be saved, so it's been reverted.",
+        confirmLabel: "Close",
+      });
     }
   };
 
@@ -634,6 +684,11 @@ export default function Canvas({
       setTitle("");
     } catch (err) {
       console.error("Error creating card:", err);
+      await confirm({
+        title: "Couldn't Save Card",
+        message: "Something went wrong creating your card. Please try again.",
+        confirmLabel: "Close",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -717,11 +772,10 @@ export default function Canvas({
                         key={t.id}
                         type="button"
                         onClick={() => handleThemeChange(t.id)}
-                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${
-                          user.selectedTheme === t.id
+                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${currentTheme === t.id
                             ? "bg-foreground text-background border-foreground font-bold"
                             : "bg-background hover:bg-muted text-foreground"
-                        }`}
+                          }`}
                       >
                         <span>{t.name}</span>
                         <span className="w-2.5 h-2.5 rounded-full border border-foreground/30" style={{ backgroundColor: t.accent }} />
@@ -744,11 +798,10 @@ export default function Canvas({
                         key={t.id}
                         type="button"
                         onClick={() => handleThemeChange(t.id)}
-                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${
-                          user.selectedTheme === t.id
+                        className={`w-full text-left px-2.5 py-1.5 border border-foreground/20 font-mono text-[10px] uppercase flex items-center justify-between transition-colors cursor-pointer ${currentTheme === t.id
                             ? "bg-foreground text-background border-foreground font-bold"
                             : "bg-background hover:bg-muted text-foreground"
-                        }`}
+                          }`}
                       >
                         <span>{t.name}</span>
                         <span className="w-2.5 h-2.5 rounded-full border border-foreground/30" style={{ backgroundColor: t.accent }} />
@@ -763,23 +816,23 @@ export default function Canvas({
           {/* Quick Light/Dark Toggle Button */}
           <button
             onClick={() => {
-              const isDark = user.selectedTheme.startsWith("dark-");
+              const isDark = currentTheme.startsWith("dark-");
               let nextTheme = "light-gold";
               if (isDark) {
-                if (user.selectedTheme === "dark-gold") nextTheme = "light-gold";
-                else if (user.selectedTheme === "dark-cyber") nextTheme = "light-swiss";
-                else if (user.selectedTheme === "dark-mono") nextTheme = "light-forest";
+                if (currentTheme === "dark-gold") nextTheme = "light-gold";
+                else if (currentTheme === "dark-cyber") nextTheme = "light-swiss";
+                else if (currentTheme === "dark-mono") nextTheme = "light-forest";
               } else {
-                if (user.selectedTheme === "light-gold") nextTheme = "dark-gold";
-                else if (user.selectedTheme === "light-swiss") nextTheme = "dark-cyber";
-                else if (user.selectedTheme === "light-forest") nextTheme = "dark-mono";
+                if (currentTheme === "light-gold") nextTheme = "dark-gold";
+                else if (currentTheme === "light-swiss") nextTheme = "dark-cyber";
+                else if (currentTheme === "light-forest") nextTheme = "dark-mono";
               }
               handleThemeChange(nextTheme);
             }}
             className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] px-3 flex items-center justify-center transition-all cursor-pointer font-bold select-none"
             title="Toggle Light/Dark Mode"
           >
-            {user.selectedTheme.startsWith("dark-") ? (
+            {currentTheme.startsWith("dark-") ? (
               <Sun className="w-4 h-4 text-accent" />
             ) : (
               <Moon className="w-4 h-4 text-accent" />
@@ -806,14 +859,14 @@ export default function Canvas({
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * PROFILE CONTROLS
                   </span>
-                  
+
                   <div className="flex flex-col gap-1.5 w-full my-3">
                     <div className="flex items-center justify-between w-full text-[10px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                       <span>STORAGE // {realMB.toFixed(2)} MB OF {maxStorageMB.toFixed(2)} MB</span>
                       <span>{storagePercentage}%</span>
                     </div>
                     <div className="w-full h-4 border-2 border-black dark:border-white bg-zinc-100 dark:bg-zinc-900 rounded-none overflow-hidden relative shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
-                      <div 
+                      <div
                         className="h-full bg-[#ff4500] dark:bg-[#ff551a] border-r-2 border-black dark:border-white transition-all duration-300"
                         style={{ width: `${storagePercentage}%` }}
                       />
@@ -885,11 +938,10 @@ export default function Canvas({
                 setContent("");
               }}
               type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
-                cardType === "TEXT"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "TEXT"
                   ? "bg-foreground text-background"
                   : "bg-card hover:bg-muted text-foreground"
-              }`}
+                }`}
             >
               <Type className="w-3.5 h-3.5" />
               Text Snippet
@@ -900,11 +952,10 @@ export default function Canvas({
                 setContent("");
               }}
               type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
-                cardType === "LINK"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "LINK"
                   ? "bg-foreground text-background"
                   : "bg-card hover:bg-muted text-foreground"
-              }`}
+                }`}
             >
               <Link2 className="w-3.5 h-3.5" />
               Web Link
@@ -915,11 +966,10 @@ export default function Canvas({
                 setContent("");
               }}
               type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
-                cardType === "CHECKLIST"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "CHECKLIST"
                   ? "bg-foreground text-background"
                   : "bg-card hover:bg-muted text-foreground"
-              }`}
+                }`}
             >
               <CheckSquare className="w-3.5 h-3.5" />
               Checklist
@@ -930,11 +980,10 @@ export default function Canvas({
                 setContent("");
               }}
               type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${
-                cardType === "API_KEY"
+              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "API_KEY"
                   ? "bg-foreground text-background"
                   : "bg-card hover:bg-muted text-foreground"
-              }`}
+                }`}
             >
               <Key className="w-3.5 h-3.5" />
               API Key
@@ -1103,14 +1152,14 @@ export default function Canvas({
               <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">
                 * RENAME CATEGORY
               </span>
-              <button 
+              <button
                 onClick={() => setIsRenameModalOpen(false)}
                 className="font-mono text-xs font-bold hover:text-accent cursor-pointer"
               >
                 [CLOSE]
               </button>
             </div>
-            
+
             <form onSubmit={handleRenameCategorySubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
@@ -1125,7 +1174,7 @@ export default function Canvas({
                   autoFocus
                 />
               </div>
-              
+
               <div className="flex gap-2 justify-end pt-2">
                 <button
                   type="button"

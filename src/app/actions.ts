@@ -8,7 +8,10 @@ import { encrypt, decrypt, maskKey } from "@/lib/crypto";
 
 async function fetchYouTubeOEmbedTitle(url: string): Promise<string> {
   try {
-    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+    const res = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+      { signal: AbortSignal.timeout(3000) }
+    );
     if (!res.ok) return "";
     const data = await res.json();
     return data && typeof data.title === "string" ? data.title : "";
@@ -82,6 +85,16 @@ export async function createCard(
 
   if (content.length > 1024 * 1024) {
     throw new Error("Payload size limit exceeded (1MB)");
+  }
+
+  // Verify the target category belongs to this user.
+  if (categoryId) {
+    const ownedCategory = await prisma.category.count({
+      where: { id: categoryId, userId: user.id },
+    });
+    if (ownedCategory === 0) {
+      throw new Error("Category not found or unauthorized");
+    }
   }
 
   let finalContent = content;
