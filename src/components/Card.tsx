@@ -635,8 +635,9 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
                   {card.title || "API KEY"}
                 </h4>
               </div>
-              <div className="flex items-center justify-between border-2 border-foreground bg-background p-2 font-mono text-xs select-all break-all shadow-[2px_2px_0px_0px_var(--foreground)]">
-                <span className="tracking-widest font-bold">
+              {/* ph-no-capture: PostHog session replay must never record the decrypted key value */}
+              <div className="ph-no-capture flex items-center justify-between border-2 border-foreground bg-background p-2 font-mono text-xs select-all break-all shadow-[2px_2px_0px_0px_var(--foreground)]">
+                <span className="ph-no-capture tracking-widest font-bold">
                   {revealKey && decryptedKey ? decryptedKey : "••••••••••••••••"}
                 </span>
               </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/queries";
+import { PHProvider } from "./providers";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -40,7 +41,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} data-theme={theme}>
       <body className="antialiased bg-background text-foreground font-sans">
-        {children}
+        <PHProvider>{children}</PHProvider>
       </body>
     </html>
   );

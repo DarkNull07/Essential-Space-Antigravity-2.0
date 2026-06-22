@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import posthog from "posthog-js";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -138,6 +139,7 @@ export default function Canvas({
   };
 
   const handleLogout = async () => {
+    posthog.reset(); // detach PostHog session before the auth cookie is cleared
     await supabase.auth.signOut();
     window.location.reload();
   };
