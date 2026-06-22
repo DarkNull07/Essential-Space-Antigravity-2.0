@@ -3,6 +3,7 @@ import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/queries";
 import { PHProvider } from "./providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -41,7 +42,10 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} data-theme={theme}>
       <body className="antialiased bg-background text-foreground font-sans">
-        <PHProvider>{children}</PHProvider>
+        <PHProvider>
+          {children}
+          <SpeedInsights />
+        </PHProvider>
       </body>
     </html>
   );
