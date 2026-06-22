@@ -4,6 +4,13 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/queries";
 import { PHProvider } from "./providers";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import type { Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 const syne = Syne({
   subsets: ["latin"],

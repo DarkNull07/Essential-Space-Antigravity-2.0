@@ -750,7 +750,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
             e.stopPropagation();
             setIsNotepadOpen(true);
           }}
-          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
           title="Open Notepad Editor"
         >
           <Pencil className="w-3.5 h-3.5" />
@@ -760,7 +760,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
       {(card.type === "TEXT" || card.type === "FILE") && (
         <button
           onClick={handleDownloadTxt}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
           title="Download as .txt"
         >
           <Download className="w-3.5 h-3.5" />
@@ -773,7 +773,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
             e.stopPropagation();
             setIsNotepadOpen(true);
           }}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
           title="Edit Link Card"
         >
           <Pencil className="w-3.5 h-3.5" />
@@ -782,7 +782,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
 
       <button
         onClick={handleDelete}
-        className="absolute bottom-2 right-[8px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+        className="absolute bottom-2 right-[8px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
         title="Delete Card"
       >
         <Trash2 className="w-3.5 h-3.5" />

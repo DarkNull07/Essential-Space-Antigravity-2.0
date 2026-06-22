@@ -694,7 +694,7 @@ export default function Canvas({
 
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen relative p-6 space-y-6 overflow-y-auto bg-background selection:bg-accent selection:text-white">
+    <div className="flex-1 flex flex-col min-h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background selection:bg-accent selection:text-white">
       {/* Drag Border Outline Overlay */}
       {isDragActive && (
         <div
@@ -715,7 +715,7 @@ export default function Canvas({
       )}
 
       {/* Canvas Top Navigation / Status Header */}
-      <header className="flex justify-between items-center border-b border-foreground/10 pb-4 lg:h-16">
+      <header className="flex flex-wrap gap-2 justify-between items-center border-b border-foreground/10 pb-4 lg:h-16">
         <div className="space-y-1">
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest block font-semibold">
             {activeCategory ? `* 03. CATEGORY / ${activeCategory.name}` : "* 03. ALL INSTANCES"}
@@ -738,7 +738,7 @@ export default function Canvas({
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-3 relative h-10">
+        <div className="flex items-center space-x-2 sm:space-x-3 relative h-10">
           {/* Themes Button */}
           <div className="relative h-10" ref={themeMenuRef}>
             <button
@@ -754,7 +754,7 @@ export default function Canvas({
             </button>
 
             {showThemeMenu && (
-              <div className="absolute right-0 mt-3 w-64 bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
+              <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-1.5rem)] bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * LIGHT TEMPLATES
@@ -847,11 +847,11 @@ export default function Canvas({
               className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[11px] px-3 flex items-center gap-1.5 transition-all cursor-pointer font-semibold select-none"
             >
               <User className="w-3.5 h-3.5 text-accent" />
-              <span className="truncate max-w-[150px]">{user.email}</span>
+              <span className="hidden sm:inline truncate max-w-[150px]">{user.email}</span>
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-64 bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
+              <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-1.5rem)] bg-card border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground)] z-50 p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * PROFILE CONTROLS
@@ -1057,7 +1057,7 @@ export default function Canvas({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))",
                     gridAutoRows: "1px",
                     gap: "24px",
                     alignItems: "start",
@@ -1099,7 +1099,7 @@ export default function Canvas({
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))",
                       gridAutoRows: "1px",
                       gap: "24px",
                       alignItems: "start",
