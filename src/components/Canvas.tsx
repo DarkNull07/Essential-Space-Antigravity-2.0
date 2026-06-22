@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
-  closestCorners,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -18,8 +20,9 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil, CheckSquare, Key } from "lucide-react";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Card from "./Card";
-import { createCard, updateCardsOrder, updateUserTheme, deleteUserAccount, renameCategory } from "@/app/actions";
+import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAccount, renameCategory, getLiveStorageMetrics } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle } from "@/lib/utils";
@@ -39,6 +42,8 @@ interface CardType {
   order: number;
   categoryId: string | null;
 }
+
+
 
 interface CanvasProps {
   user: {
@@ -73,6 +78,31 @@ export default function Canvas({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const confirm = useConfirm();
+
+  const filteredCards = cards
+    .filter((c) => (activeCategory ? c.categoryId === activeCategory.id : true))
+    .sort((a, b) => a.order - b.order);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const [liveStorageMB, setLiveStorageMB] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (showProfileMenu) {
+      getLiveStorageMetrics()
+        .then((mb) => {
+          setLiveStorageMB(mb);
+        })
+        .catch((err) => {
+          console.error("Error fetching live storage metrics:", err);
+          setLiveStorageMB(0.01);
+        });
+    }
+  }, [showProfileMenu]);
+
+  const realMB = liveStorageMB !== null ? liveStorageMB : 0.01;
+  const maxStorageMB = 10.00;
+  const storagePercentage = Math.min(100, Math.round((realMB / maxStorageMB) * 100));
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [renameName, setRenameName] = useState("");
@@ -194,6 +224,49 @@ export default function Canvas({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
   const activeCategoryIdRef = useRef<string | null>(null);
+
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+  const themeTriggerRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Global click-outside listener with bubbling protection, detached node interception, and portal-safe exception (Phase 6)
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // 1. Detached Node Interception: if node unmounted during operation, skip click-away check
+      if (!document.body.contains(target)) {
+        return;
+      }
+
+      // 2. Portal-Safe Exception: if target is inside any portal, skip click-away check
+      if (target.closest('[data-portal="true"]')) {
+        return;
+      }
+
+      // 3. Bubbling Protection: check theme trigger before collapsing menu
+      if (showThemeMenu && themeMenuRef.current && !themeMenuRef.current.contains(target)) {
+        const isThemeTriggerClick = themeTriggerRef.current && themeTriggerRef.current.contains(target);
+        if (!isThemeTriggerClick) {
+          setShowThemeMenu(false);
+        }
+      }
+
+      // 4. Bubbling Protection: check profile trigger before collapsing menu
+      if (showProfileMenu && profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        const isProfileTriggerClick = profileTriggerRef.current && profileTriggerRef.current.contains(target);
+        if (!isProfileTriggerClick) {
+          setShowProfileMenu(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [showThemeMenu, showProfileMenu]);
 
   useEffect(() => {
     activeCategoryIdRef.current = activeCategory ? activeCategory.id : null;
@@ -472,33 +545,44 @@ export default function Canvas({
     };
   }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd, router]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    if (!activeCategory) return;
+    setActiveId(null);
+    if (!over) return;
 
-    const oldIndex = filteredCards.findIndex((c) => c.id === active.id);
-    const newIndex = filteredCards.findIndex((c) => c.id === over.id);
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (activeId === overId) return;
 
-    const reorderedFiltered = arrayMove(filteredCards, oldIndex, newIndex);
+    const activeIndex = filteredCards.findIndex((c) => String(c.id) === activeId);
+    const overIndex = filteredCards.findIndex((c) => String(c.id) === overId);
 
-    // Reconstruct global cards state by replacing category cards with the reordered ones
-    let filteredIndex = 0;
-    const reorderedGlobal = cards.map((c) => {
-      const isActiveCategoryMatch = c.categoryId === activeCategory.id;
-      if (!isActiveCategoryMatch) return c;
-      return reorderedFiltered[filteredIndex++];
+    if (activeIndex === -1 || overIndex === -1) return;
+
+    const reorderedFiltered = arrayMove(filteredCards, activeIndex, overIndex);
+
+    const updatedFiltered = reorderedFiltered.map((c, index) => ({
+      ...c,
+      order: index,
+    }));
+
+    const updatedCards = cards.map((c) => {
+      const match = updatedFiltered.find((uf) => uf.id === c.id);
+      return match ? match : c;
     });
 
-    onCardsChange(reorderedGlobal);
+    onCardsChange(updatedCards);
 
     try {
-      // Reorder only the category-scoped cards
-      await updateCardsOrder(reorderedFiltered.map((c) => c.id));
+      await updateCardsOrder(updatedFiltered.map((c) => c.id));
+      router.refresh();
     } catch (err) {
-      console.error("Error updating cards order:", err);
+      console.error("Failed to save reordered cards:", err);
     }
   };
 
@@ -553,9 +637,7 @@ export default function Canvas({
     }
   };
 
-  const filteredCards = cards.filter((c) =>
-    activeCategory ? c.categoryId === activeCategory.id : true
-  );
+
 
   return (
     <div className="flex-1 flex flex-col min-h-screen relative p-6 space-y-6 overflow-y-auto bg-background selection:bg-accent selection:text-white">
@@ -604,8 +686,9 @@ export default function Canvas({
         </div>
         <div className="flex items-center space-x-3 relative h-10">
           {/* Themes Button */}
-          <div className="relative h-10">
+          <div className="relative h-10" ref={themeMenuRef}>
             <button
+              ref={themeTriggerRef}
               onClick={() => {
                 setShowThemeMenu(!showThemeMenu);
                 setShowProfileMenu(false);
@@ -702,8 +785,9 @@ export default function Canvas({
           </button>
 
           {/* User Email Button */}
-          <div className="relative h-10">
+          <div className="relative h-10" ref={profileMenuRef}>
             <button
+              ref={profileTriggerRef}
               onClick={() => {
                 setShowProfileMenu(!showProfileMenu);
                 setShowThemeMenu(false);
@@ -720,6 +804,21 @@ export default function Canvas({
                   <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-accent block">
                     * PROFILE CONTROLS
                   </span>
+                  
+                  <div className="flex flex-col gap-1.5 w-full my-3">
+                    <div className="flex items-center justify-between w-full text-[10px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      <span>STORAGE // {realMB.toFixed(2)} MB OF {maxStorageMB.toFixed(2)} MB</span>
+                      <span>{storagePercentage}%</span>
+                    </div>
+                    <div className="w-full h-4 border-2 border-black dark:border-white bg-zinc-100 dark:bg-zinc-900 rounded-none overflow-hidden relative shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]">
+                      <div 
+                        className="h-full bg-[#ff4500] dark:bg-[#ff551a] border-r-2 border-black dark:border-white transition-all duration-300"
+                        style={{ width: `${storagePercentage}%` }}
+                      />
+                    </div>
+                    <div className="w-full border-t border-dashed border-zinc-300 dark:border-zinc-700 mt-2.5" />
+                  </div>
+
                   <div className="grid grid-cols-1 gap-2 pt-1">
                     <button
                       onClick={handleExportData}
@@ -866,7 +965,7 @@ export default function Canvas({
                 {cardType === "TEXT" || cardType === "CHECKLIST" ? (
                   <textarea
                     ref={textareaRef}
-                    placeholder={cardType === "TEXT" ? "ENTER NOTES OR CODE LOGS" : "Item 1\nItem 2\nItem 3"}
+                    placeholder={cardType === "TEXT" ? "Enter notes, code blocks, URLs, or checklists (- [ ] task)..." : "Item 1\nItem 2\nItem 3"}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required
@@ -900,39 +999,74 @@ export default function Canvas({
       {/* Grid Canvas Sortable Section */}
       <section className="flex-grow">
         {mounted && filteredCards.length > 0 ? (
-          activeCategory !== null ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={filteredCards} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredCards.map((card) => (
-                    <Card
-                      key={card.id}
-                      card={card}
-                      onDelete={(id) => {
-                        onCardsChange((prev) => prev.filter((c) => c.id !== id));
-                      }}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCards.map((card) => (
-                <Card
-                  key={card.id}
-                  card={card}
-                  onDelete={(id) => {
-                    onCardsChange((prev) => prev.filter((c) => c.id !== id));
-                  }}
-                />
-              ))}
-            </div>
-          )
+          (() => {
+            const activeCard = cards.find((c) => String(c.id) === activeId);
+
+            return activeCategory !== null ? (
+              <DndContext
+                id="canvas-cards-dnd"
+                sensors={sensors}
+                collisionDetection={rectIntersection}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={() => setActiveId(null)}
+                modifiers={[restrictToWindowEdges]}
+              >
+                <SortableContext
+                  items={filteredCards.map((c) => String(c.id))}
+                  strategy={rectSortingStrategy}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                      gridAutoRows: "1px",
+                      gap: "24px",
+                      alignItems: "start",
+                    }}
+                  >
+                    {filteredCards.map((card) => (
+                      <Card
+                        key={card.id}
+                        card={card}
+                        onDelete={(id) => {
+                          onCardsChange((prev) => prev.filter((c) => c.id !== id));
+                        }}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+
+                <DragOverlay>
+                  {activeCard ? (
+                    <div className="w-full h-fit pointer-events-none select-none">
+                      <Card card={activeCard} isOverlay />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  gridAutoRows: "1px",
+                  gap: "24px",
+                  alignItems: "start",
+                }}
+              >
+                {filteredCards.map((card) => (
+                  <Card
+                    key={card.id}
+                    card={card}
+                    onDelete={(id) => {
+                      onCardsChange((prev) => prev.filter((c) => c.id !== id));
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          })()
         ) : (
           mounted && (
             <div className="flex flex-col items-center justify-center border-4 border-dashed border-foreground/10 rounded bg-muted/30 py-20 px-6 text-center space-y-4">
@@ -954,7 +1088,14 @@ export default function Canvas({
 
       {/* Neo-Brutalist Rename Category Modal */}
       {isRenameModalOpen && activeCategory && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsRenameModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div className="bg-card border-4 border-foreground p-6 shadow-[6px_6px_0px_0px_var(--foreground)] w-full max-w-md space-y-4">
             <div className="flex justify-between items-center border-b-2 border-foreground pb-2">
               <span className="font-mono text-xs uppercase font-bold tracking-widest text-accent">

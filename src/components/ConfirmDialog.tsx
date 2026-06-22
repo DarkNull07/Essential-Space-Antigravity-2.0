@@ -50,7 +50,13 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+        <div
+          data-portal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCancel();
+          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4"
+        >
           <div className="bg-background text-foreground border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground,#000)] max-w-md w-full p-6 space-y-6 animate-scale-in">
             <div className="space-y-2">
               <span className="font-mono text-xs uppercase tracking-widest text-accent font-semibold block">

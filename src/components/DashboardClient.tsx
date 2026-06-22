@@ -53,6 +53,10 @@ export default function DashboardClient({
     setCards(initialCards);
   }, [initialCards]);
 
+  useEffect(() => {
+    setTheme(user.theme || user.selectedTheme);
+  }, [user.theme, user.selectedTheme]);
+
   // Dynamically update document element attributes on client side
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);

@@ -108,3 +108,17 @@ export function stringToBase64(str: string): string {
   }
 }
 
+export function getDomain(url: string): string {
+  try {
+    let clean = url.trim();
+    if (!/^https?:\/\//i.test(clean)) {
+      clean = `https://${clean}`;
+    }
+    const parsedUrl = new URL(clean);
+    return parsedUrl.hostname.replace(/^www\./i, "");
+  } catch (err) {
+    return url.replace(/^(https?:\/\/)?(www\.)?/i, "").split("/")[0] || url;
+  }
+}
+
+

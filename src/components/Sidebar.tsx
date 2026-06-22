@@ -18,11 +18,13 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createCategory, deleteCategory, updateCategoriesOrder } from "@/app/actions";
+import { restrictToParentElement } from "@dnd-kit/modifiers";
+import { createCategory, deleteCategory, updateCategoryOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
 import Link from "next/link";
 import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Category {
   id: string;
@@ -60,11 +62,11 @@ function SortableCategoryItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: category.id });
+  } = useSortable({ id: String(category.id) });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? "none" : transition,
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -79,10 +81,14 @@ function SortableCategoryItem({
       }`}
     >
       {/* Clickable Area for Selection & Drag */}
-      <div className="flex items-center space-x-3 flex-1 min-w-0 group/item cursor-pointer" onClick={onClick}>
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1">
-          {isActive ? <FolderOpen className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
-        </div>
+      <div
+        {...attributes}
+        {...listeners}
+        onClick={onClick}
+        style={{ touchAction: "none" }}
+        className="flex items-center space-x-3 flex-1 min-w-0 group/item cursor-grab active:cursor-grabbing touch-none select-none"
+      >
+        {isActive ? <FolderOpen className="w-4 h-4 shrink-0" /> : <Folder className="w-4 h-4 shrink-0" />}
         
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
@@ -91,7 +97,7 @@ function SortableCategoryItem({
         </div>
 
         <span
-          className={`font-mono text-[9px] px-1.5 py-0.5 border ${
+          className={`font-mono text-[9px] px-1.5 py-0.5 border shrink-0 ${
             isActive
               ? "bg-white/20 border-white/20 text-white"
               : "bg-muted border-foreground/10 text-muted-foreground"
@@ -132,6 +138,7 @@ export default function Sidebar({
   theme = "light-gold",
 }: SidebarProps) {
   const confirm = useConfirm();
+  const router = useRouter();
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -143,11 +150,8 @@ export default function Sidebar({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
@@ -155,8 +159,8 @@ export default function Sidebar({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = categories.findIndex((c) => c.id === active.id);
-    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const oldIndex = categories.findIndex((c) => String(c.id) === String(active.id));
+    const newIndex = categories.findIndex((c) => String(c.id) === String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -164,7 +168,8 @@ export default function Sidebar({
     onCategoriesChange(reordered);
 
     try {
-      await updateCategoriesOrder(reordered.map((c) => c.id));
+      await updateCategoryOrder(reordered.map((c) => String(c.id)));
+      router.refresh();
     } catch (err) {
       console.error("Error updating category order in DB:", err);
     }
@@ -244,7 +249,7 @@ export default function Sidebar({
           <div className="flex items-center space-x-3">
             <FolderOpen className="w-4 h-4" />
             <span className="font-display font-semibold text-xs tracking-wider uppercase">
-              SHOW ALL ITEMS
+              ALL ITEMS
             </span>
           </div>
           <span
@@ -261,11 +266,13 @@ export default function Sidebar({
         {/* Sortable Category List */}
         {mounted && categories.length > 0 ? (
           <DndContext
+            id="sidebar-categories-dnd"
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
+            modifiers={[restrictToParentElement]}
           >
-            <SortableContext items={categories} strategy={verticalListSortingStrategy}>
+            <SortableContext items={categories.map((c) => String(c.id))} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
                 {categories.map((cat) => (
                   <SortableCategoryItem
