@@ -1,0 +1,90 @@
+<!-- Subject: Reset your Essential Space password -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Reset your password — Essential Space</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+
+        <!-- Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;width:100%;background-color:#ffffff;border:2px solid #111111;border-radius:4px;overflow:hidden;">
+
+          <!-- Header bar -->
+          <tr>
+            <td align="center" style="background-color:#111111;padding:22px 32px;">
+              <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.06em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">&#10022; ESSENTIAL SPACE</span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px 40px;">
+
+              <!-- Eyebrow -->
+              <p style="margin:0 0 12px 0;font-size:11px;font-weight:700;letter-spacing:0.12em;color:#FF5A36;text-transform:uppercase;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Reset Password</p>
+
+              <!-- Heading -->
+              <h1 style="margin:0 0 16px 0;font-size:24px;font-weight:800;color:#111111;line-height:1.2;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Reset your password</h1>
+
+              <!-- Body copy -->
+              <p style="margin:0 0 20px 0;font-size:15px;color:#3f3f46;line-height:1.6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+                We received a request to reset the password for your Essential Space account. Click the button below to choose a new password and regain access to your workspace.
+              </p>
+
+              <p style="margin:0 0 28px 0;font-size:15px;color:#3f3f46;line-height:1.6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+                This link is valid for a limited time. If you did not request a password reset, you can safely ignore this email &#8212; your password will not change.
+              </p>
+
+              <!-- Bulletproof button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center" bgcolor="#FF5A36" style="background-color:#FF5A36;border-radius:4px;box-shadow:3px 3px 0 #111111;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:15px 44px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.06em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;border-radius:4px;">RESET PASSWORD</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Fallback link -->
+              <p style="margin:0 0 8px 0;font-size:13px;color:#71717a;line-height:1.5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+                If the button doesn&#8217;t work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:0;font-size:12px;color:#FF5A36;line-height:1.5;word-break:break-all;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+                {{ .ConfirmationURL }}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <div style="height:1px;background-color:#e4e4e7;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px 32px 40px;">
+              <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+                You received this email because a password reset was requested for the Essential Space account associated with this address. If you didn&#8217;t request this, ignore this email &#8212; your password won&#8217;t change and your account remains secure.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
