@@ -24,7 +24,7 @@ import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
 import Link from "next/link";
 import { Folder, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+
 
 interface Category {
   id: string;
@@ -138,7 +138,6 @@ export default function Sidebar({
   theme = "light-gold",
 }: SidebarProps) {
   const confirm = useConfirm();
-  const router = useRouter();
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -169,7 +168,6 @@ export default function Sidebar({
 
     try {
       await updateCategoryOrder(reordered.map((c) => String(c.id)));
-      router.refresh();
     } catch (err) {
       console.error("Error updating category order in DB:", err);
     }

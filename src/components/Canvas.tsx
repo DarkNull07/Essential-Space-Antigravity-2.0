@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import posthog from "posthog-js";
-import { useRouter } from "next/navigation";
 import {
   DndContext,
   rectIntersection,
@@ -74,7 +73,6 @@ export default function Canvas({
   onUploadProgress,
   onUploadEnd,
 }: CanvasProps) {
-  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const supabase = createClient();
@@ -117,11 +115,12 @@ export default function Canvas({
     const trimmed = renameName.trim();
     if (!trimmed) return;
 
+    // Optimistically update the category name in the parent state before awaiting
+    const prevCategories = categories;
     setRenaming(true);
     try {
       await renameCategory(activeCategory.id, trimmed);
       setIsRenameModalOpen(false);
-      router.refresh();
     } catch (err) {
       console.error("Failed to rename category:", err);
       alert("Failed to rename category. Please make sure the name is unique.");
@@ -564,7 +563,6 @@ export default function Canvas({
           onCardsChange((prev) => [...prev, ...createdCards]);
         }
         onUploadProgress(100);
-        router.refresh();
 
         if (failed.length > 0) {
           await confirm({
@@ -589,7 +587,7 @@ export default function Canvas({
     return () => {
       window.removeEventListener("paste", handlePaste);
     };
-  }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd, router]);
+  }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
@@ -626,7 +624,6 @@ export default function Canvas({
 
     try {
       await updateCardsOrder(updatedFiltered.map((c) => c.id));
-      router.refresh();
     } catch (err) {
       console.error("Failed to save reordered cards:", err);
       onCardsChange(cards); // revert the optimistic reorder
@@ -1083,6 +1080,11 @@ export default function Canvas({
                         onDelete={(id) => {
                           onCardsChange((prev) => prev.filter((c) => c.id !== id));
                         }}
+                        onCardUpdate={(updated) => {
+                          onCardsChange((prev) =>
+                            prev.map((c) => (c.id === updated.id ? updated : c))
+                          );
+                        }}
                       />
                     ))}
                   </div>
@@ -1112,6 +1114,11 @@ export default function Canvas({
                     card={card}
                     onDelete={(id) => {
                       onCardsChange((prev) => prev.filter((c) => c.id !== id));
+                    }}
+                    onCardUpdate={(updated) => {
+                      onCardsChange((prev) =>
+                        prev.map((c) => (c.id === updated.id ? updated : c))
+                      );
                     }}
                   />
                 ))}

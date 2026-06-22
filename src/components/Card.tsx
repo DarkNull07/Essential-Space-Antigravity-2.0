@@ -8,7 +8,7 @@ import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare,
 import { deleteCard, updateCard, revealApiKey } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle, base64ToString, stringToBase64, getDomain } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+
 
 // Only allow safe URL schemes in hrefs to block javascript:/data: stored-XSS.
 function safeExternalHref(raw: string | null | undefined): string {
@@ -34,12 +34,12 @@ interface CardProps {
     categoryId: string | null;
   };
   onDelete?: (id: string) => void;
+  onCardUpdate?: (updated: CardProps["card"]) => void;
   isOverlay?: boolean;
 }
 
-export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
+export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
   const confirm = useConfirm();
-  const router = useRouter();
   
   const [items, setItems] = useState<any[]>(() => {
     if (card.type === "CHECKLIST" && card.metadata && Array.isArray(card.metadata.items)) {
@@ -188,6 +188,10 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
 
   const handleSaveNotepad = async (title: string, content: string, description?: string) => {
     setSavingNotepad(true);
+    // Snapshot previous values for rollback
+    const prevTitle = card.title;
+    const prevContent = card.content;
+    const prevMetadata = card.metadata;
     try {
       let contentToSave = content;
       let newMetadata = card.metadata || {};
@@ -213,11 +217,22 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
           description: description || "",
         };
       }
+      // Optimistic update — show new values immediately
+      const optimisticCard = {
+        ...card,
+        title: title.trim() || null,
+        content: contentToSave,
+        metadata: newMetadata,
+      };
+      onCardUpdate?.(optimisticCard);
+      setLocalContent(contentToSave);
       await updateCard(card.id, contentToSave, title.trim() || null, newMetadata);
       setIsNotepadOpen(false);
-      router.refresh();
     } catch (err) {
       console.error("Failed to save notepad card:", err);
+      // Rollback to previous values
+      onCardUpdate?.({ ...card, title: prevTitle, content: prevContent, metadata: prevMetadata });
+      setLocalContent(prevContent);
       alert("Failed to save. Please try again.");
     } finally {
       setSavingNotepad(false);
@@ -227,12 +242,16 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
 
   const handleSaveLightbox = async (newTitle: string) => {
     setSavingLightbox(true);
+    const prevTitle = card.title;
+    // Optimistic update — show new title immediately
+    onCardUpdate?.({ ...card, title: newTitle.trim() || null });
     try {
       await updateCard(card.id, card.content, newTitle.trim() || null, card.metadata);
       setIsLightboxOpen(false);
-      router.refresh();
     } catch (err) {
       console.error("Failed to save lightbox title:", err);
+      // Rollback to previous title
+      onCardUpdate?.({ ...card, title: prevTitle });
       alert("Failed to save title. Please try again.");
     } finally {
       setSavingLightbox(false);

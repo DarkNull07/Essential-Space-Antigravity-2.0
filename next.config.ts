@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "fzqnyzipoiuevosznoxg.supabase.co",
+        hostname: "tkwmmilxdagxdmhvhigz.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
     ],
@@ -51,10 +51,10 @@ const nextConfig: NextConfig = {
               "default-src 'self';",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline';",
               "style-src 'self' 'unsafe-inline';",
-              "img-src 'self' data: https://fzqnyzipoiuevosznoxg.supabase.co https://www.google.com https://*.ytimg.com https://*.youtube.com;",
+              "img-src 'self' data: https://tkwmmilxdagxdmhvhigz.supabase.co https://www.google.com https://*.ytimg.com https://*.youtube.com;",
               "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com;",
               // 'self' covers /ingest/* proxy so no external PostHog origin needed.
-              "connect-src 'self' https://fzqnyzipoiuevosznoxg.supabase.co wss://fzqnyzipoiuevosznoxg.supabase.co https://www.youtube.com;",
+              "connect-src 'self' https://tkwmmilxdagxdmhvhigz.supabase.co wss://tkwmmilxdagxdmhvhigz.supabase.co https://www.youtube.com;",
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com;",
               "media-src 'self';",
               // PostHog session-replay recorder runs in a Web Worker sourced from a
