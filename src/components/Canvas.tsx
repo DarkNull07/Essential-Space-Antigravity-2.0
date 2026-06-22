@@ -1046,11 +1046,43 @@ export default function Canvas({
 
       {/* Grid Canvas Sortable Section */}
       <section className="flex-grow">
-        {mounted && filteredCards.length > 0 ? (
+        {filteredCards.length > 0 ? (
           (() => {
-            const activeCard = cards.find((c) => String(c.id) === activeId);
+            const activeCard = mounted ? cards.find((c) => String(c.id) === activeId) : undefined;
 
-            return activeCategory !== null ? (
+            // SSR / pre-hydration: render a plain grid without dnd wrappers to avoid
+            // dnd-kit hydration mismatches and to ship card HTML in the initial document.
+            if (!mounted || activeCategory === null) {
+              return (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                    gridAutoRows: "1px",
+                    gap: "24px",
+                    alignItems: "start",
+                  }}
+                >
+                  {filteredCards.map((card) => (
+                    <Card
+                      key={card.id}
+                      card={card}
+                      onDelete={(id) => {
+                        onCardsChange((prev) => prev.filter((c) => c.id !== id));
+                      }}
+                      onCardUpdate={(updated) => {
+                        onCardsChange((prev) =>
+                          prev.map((c) => (c.id === updated.id ? updated : c))
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            }
+
+            // Post-hydration with an active category: full drag-and-drop grid.
+            return (
               <DndContext
                 id="canvas-cards-dnd"
                 sensors={sensors}
@@ -1098,31 +1130,6 @@ export default function Canvas({
                   ) : null}
                 </DragOverlay>
               </DndContext>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gridAutoRows: "1px",
-                  gap: "24px",
-                  alignItems: "start",
-                }}
-              >
-                {filteredCards.map((card) => (
-                  <Card
-                    key={card.id}
-                    card={card}
-                    onDelete={(id) => {
-                      onCardsChange((prev) => prev.filter((c) => c.id !== id));
-                    }}
-                    onCardUpdate={(updated) => {
-                      onCardsChange((prev) =>
-                        prev.map((c) => (c.id === updated.id ? updated : c))
-                      );
-                    }}
-                  />
-                ))}
-              </div>
             );
           })()
         ) : (

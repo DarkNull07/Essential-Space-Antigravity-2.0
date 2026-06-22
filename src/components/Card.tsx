@@ -50,6 +50,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
   const [newChecklistItemText, setNewChecklistItemText] = useState("");
   const [revealKey, setRevealKey] = useState(false);
   const [decryptedKey, setDecryptedKey] = useState<string | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
   const [copied, setCopied] = useState(false);
   
   // Notepad modal editor states
@@ -184,6 +185,21 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // Idempotent prefetch: fetches the decrypted key at most once per card mount.
+  // Only triggered by explicit user intent (hover/focus/click) — never on mount.
+  const ensureDecryptedKey = async () => {
+    if (decryptedKey || isRevealing) return;
+    setIsRevealing(true);
+    try {
+      const raw = await revealApiKey(card.id);
+      setDecryptedKey(raw);
+    } catch (err) {
+      console.error("Failed to reveal API key:", err);
+    } finally {
+      setIsRevealing(false);
+    }
   };
 
   const handleSaveNotepad = async (title: string, content: string, description?: string) => {
@@ -675,18 +691,13 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
             </div>
             <div className="flex gap-2 pt-1">
               <button
+                onMouseEnter={ensureDecryptedKey}
+                onFocus={ensureDecryptedKey}
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (!revealKey) {
-                    try {
-                      if (!decryptedKey) {
-                        const raw = await revealApiKey(card.id);
-                        setDecryptedKey(raw);
-                      }
-                      setRevealKey(true);
-                    } catch (err) {
-                      console.error("Failed to reveal API key:", err);
-                    }
+                    await ensureDecryptedKey();
+                    setRevealKey(true);
                   } else {
                     setRevealKey(false);
                   }
@@ -698,6 +709,8 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
                     <EyeOff className="w-3.5 h-3.5" />
                     HIDE
                   </>
+                ) : isRevealing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <>
                     <Eye className="w-3.5 h-3.5" />
