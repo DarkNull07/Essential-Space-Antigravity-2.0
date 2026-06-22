@@ -69,9 +69,31 @@ export default function LoginPage() {
     try {
       if (authView === 'signup') {
         if (password !== confirmPassword) {
-          setMessage({ type: "error", text: "Passwords do not match." });
+          setMessage({ type: "error", text: "PASSWORDS DO NOT MATCH" });
           setLoading(false);
           return;
+        }
+
+        if (password.length < 8) {
+          setMessage({ type: "error", text: "SECURITY REJECTION // PASSWORD MUST BE AT LEAST 8 CHARACTERS." });
+          setLoading(false);
+          return;
+        }
+
+        const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+        if (!complexityRegex.test(password)) {
+          setMessage({ type: "error", text: "POLICY VIOLATION // MUST CONTAIN UPPERCASE, LOWERCASE, NUMBER, AND SPECIAL CHARACTER." });
+          setLoading(false);
+          return;
+        }
+
+        if (email && email.includes('@')) {
+          const emailPrefix = email.split('@')[0].toLowerCase();
+          if (emailPrefix && password.toLowerCase().includes(emailPrefix)) {
+            setMessage({ type: "error", text: "INSECURE PARAMETER // PASSWORD CANNOT CONTAIN YOUR EMAIL USERNAME." });
+            setLoading(false);
+            return;
+          }
         }
 
         const { error } = await supabase.auth.signUp({
@@ -142,7 +164,27 @@ export default function LoginPage() {
     if (!password || !confirmPassword) return;
 
     if (password !== confirmPassword) {
-      return alert("PASSWORDS DO NOT MATCH");
+      setMessage({ type: "error", text: "PASSWORDS DO NOT MATCH" });
+      return;
+    }
+
+    if (password.length < 8) {
+      setMessage({ type: "error", text: "SECURITY REJECTION // PASSWORD MUST BE AT LEAST 8 CHARACTERS." });
+      return;
+    }
+
+    const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!complexityRegex.test(password)) {
+      setMessage({ type: "error", text: "POLICY VIOLATION // MUST CONTAIN UPPERCASE, LOWERCASE, NUMBER, AND SPECIAL CHARACTER." });
+      return;
+    }
+
+    if (email && email.includes('@')) {
+      const emailPrefix = email.split('@')[0].toLowerCase();
+      if (emailPrefix && password.toLowerCase().includes(emailPrefix)) {
+        setMessage({ type: "error", text: "INSECURE PARAMETER // PASSWORD CANNOT CONTAIN YOUR EMAIL USERNAME." });
+        return;
+      }
     }
 
     setLoading(true);
