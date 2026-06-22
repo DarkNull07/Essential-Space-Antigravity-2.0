@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2 } from "lucide-react";
-import { deleteCard, updateCard } from "@/app/actions";
+import { deleteCard, updateCard, revealApiKey } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle, base64ToString, stringToBase64, getDomain } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
   });
   const [newChecklistItemText, setNewChecklistItemText] = useState("");
   const [revealKey, setRevealKey] = useState(false);
+  const [decryptedKey, setDecryptedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
   // Notepad modal editor states
@@ -138,11 +139,20 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
     }
   };
 
-  const handleCopyKey = (e: React.MouseEvent) => {
+  const handleCopyKey = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(card.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      let keyToCopy = decryptedKey;
+      if (!keyToCopy) {
+        keyToCopy = await revealApiKey(card.id);
+        setDecryptedKey(keyToCopy);
+      }
+      await navigator.clipboard.writeText(keyToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy API key:", err);
+    }
   };
 
   const handleDownloadTxt = (e: React.MouseEvent) => {
@@ -627,15 +637,27 @@ export default function Card({ card, onDelete, isOverlay = false }: CardProps) {
               </div>
               <div className="flex items-center justify-between border-2 border-foreground bg-background p-2 font-mono text-xs select-all break-all shadow-[2px_2px_0px_0px_var(--foreground)]">
                 <span className="tracking-widest font-bold">
-                  {revealKey ? card.content : "••••••••••••••••"}
+                  {revealKey && decryptedKey ? decryptedKey : "••••••••••••••••"}
                 </span>
               </div>
             </div>
             <div className="flex gap-2 pt-1">
               <button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  setRevealKey(!revealKey);
+                  if (!revealKey) {
+                    try {
+                      if (!decryptedKey) {
+                        const raw = await revealApiKey(card.id);
+                        setDecryptedKey(raw);
+                      }
+                      setRevealKey(true);
+                    } catch (err) {
+                      console.error("Failed to reveal API key:", err);
+                    }
+                  } else {
+                    setRevealKey(false);
+                  }
                 }}
                 className="flex-1 bg-background hover:bg-muted border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] font-bold"
               >

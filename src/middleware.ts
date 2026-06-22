@@ -4,6 +4,10 @@ import { NextResponse, type NextRequest } from "next/server";
 export const runtime = 'nodejs';
 
 export async function middleware(request: NextRequest) {
+  if (request.headers.has("x-middleware-subrequest")) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -34,7 +38,6 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname === "/login";
 
   // Redirect to login if user is not authenticated and trying to access a protected page
-  /*
   if (!user && !isLoginPage) {
     if (request.nextUrl.pathname.startsWith("/api")) {
       const apiResponse = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,7 +56,6 @@ export async function middleware(request: NextRequest) {
     });
     return redirectResponse;
   }
-  */
 
   // Redirect to home if user is authenticated and trying to access login page
   if (user && isLoginPage) {

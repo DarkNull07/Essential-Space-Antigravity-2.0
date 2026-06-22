@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { getAuthUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { encrypt, decrypt, maskKey } from "@/lib/crypto";
 
 async function fetchYouTubeOEmbedTitle(url: string): Promise<string> {
   try {
@@ -83,6 +84,11 @@ export async function createCard(
     throw new Error("Payload size limit exceeded (1MB)");
   }
 
+  let finalContent = content;
+  if (type === "API_KEY") {
+    finalContent = encrypt(content);
+  }
+
   let updatedMetadata = metadata || null;
   if (type === "LINK") {
     try {
@@ -111,7 +117,7 @@ export async function createCard(
   const card = await prisma.card.create({
     data: {
       type,
-      content,
+      content: finalContent,
       title: title || null,
       metadata: updatedMetadata,
       order: count,
@@ -121,7 +127,11 @@ export async function createCard(
   });
 
   revalidatePath("/");
-  return card;
+  
+  return {
+    ...card,
+    content: type === "API_KEY" ? maskKey(card.content) : card.content
+  };
 }
 
 // Reorder cards in a category
@@ -258,6 +268,11 @@ export async function updateCard(
     throw new Error("Unauthorized or Card Not Found");
   }
 
+  let finalContent = content;
+  if (existingCard.type === "API_KEY") {
+    finalContent = encrypt(content);
+  }
+
   let updatedMetadata = metadata;
   if (existingCard.type === "LINK") {
     try {
@@ -282,7 +297,7 @@ export async function updateCard(
   const result = await prisma.card.updateMany({
     where: { id, userId: user.id },
     data: {
-      content,
+      content: finalContent,
       title: title !== undefined ? title : undefined,
       metadata: updatedMetadata !== undefined ? updatedMetadata : undefined,
     },
@@ -298,12 +313,35 @@ export async function updateCard(
   });
 
   revalidatePath("/");
+  
+  if (updated && updated.type === "API_KEY") {
+    return {
+      ...updated,
+      content: maskKey(updated.content)
+    };
+  }
   return updated!;
+}
+
+// Reveal/decrypt API key content for a card
+export async function revealApiKey(cardId: string): Promise<string> {
+  const user = await getAuthUser();
+  const card = await prisma.card.findFirst({
+    where: { id: cardId, userId: user.id },
+  });
+  if (!card) {
+    throw new Error("Card not found or unauthorized");
+  }
+  if (card.type !== "API_KEY") {
+    throw new Error("Card is not of type API_KEY");
+  }
+  return decrypt(card.content);
 }
 
 // Fetch the live disk size of the Card table from Supabase Postgres
 export async function getLiveStorageMetrics(): Promise<number> {
   try {
+    await getAuthUser();
     const supabase = await createClient();
     const { data: bytes, error } = await supabase.rpc("get_cards_disk_size");
     if (error) {

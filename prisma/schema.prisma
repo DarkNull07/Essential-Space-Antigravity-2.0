@@ -30,11 +30,12 @@ model Category {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, name])
+  @@index([userId, order])
 }
 
 model Card {
   id          String      @id @default(uuid())
-  type        String      // "TEXT", "CHECKLIST", "LINK", "API_KEY", "IMAGE", "FILE"
+  type        CardType    
   title       String?     
   content     String      
   metadata    Json?       // Stores image width/height, bytes, favicon, domain, or checklist items
@@ -45,4 +46,16 @@ model Card {
   user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([userId, order])
+  @@index([categoryId, order])
+}
+
+enum CardType {
+  TEXT
+  CHECKLIST
+  LINK
+  API_KEY
+  IMAGE
+  FILE
 }

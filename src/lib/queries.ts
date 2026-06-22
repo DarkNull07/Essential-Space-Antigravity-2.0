@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { getAuthUser } from "./auth";
+import { maskKey } from "./crypto";
 
 export async function getCurrentUser() {
   try {
@@ -19,8 +20,17 @@ export async function getCategories(userId: string) {
 
 // Get all cards for current user
 export async function getCards(userId: string) {
-  return prisma.card.findMany({
+  const cards = await prisma.card.findMany({
     where: { userId },
     orderBy: { order: "asc" },
+  });
+  return cards.map(card => {
+    if (card.type === "API_KEY") {
+      return {
+        ...card,
+        content: maskKey(card.content)
+      };
+    }
+    return card;
   });
 }
