@@ -29,7 +29,9 @@ export async function middleware(request: NextRequest) {
     url.pathname = url.pathname.replace(/^\/ingest/, "");
 
     return NextResponse.rewrite(url, {
-      headers: requestHeaders,
+      request: {
+        headers: requestHeaders,
+      },
     });
   }
 
