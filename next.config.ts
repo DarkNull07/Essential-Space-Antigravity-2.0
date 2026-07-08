@@ -24,29 +24,11 @@ const nextConfig: NextConfig = {
   },
 
   // ── PostHog same-origin reverse proxy ────────────────────────────────────
-  // All /ingest/* requests are rewritten to PostHog's ingestion endpoints.
+  // Proxying of /ingest/* requests is handled in src/middleware.ts.
   // This keeps analytics within the same origin so:
   //   (a) connect-src 'self' covers event ingestion without loosening the CSP.
   //   (b) the proxy is transparent to browser-based ad-blockers.
-  async rewrites() {
-    return [
-      {
-        // Static assets (posthog-js recorder chunk)
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        // Feature flags endpoint (must be listed before the wildcard)
-        source: "/ingest/flags",
-        destination: "https://us.i.posthog.com/flags",
-      },
-      {
-        // All other ingestion paths (events, decide, …)
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-    ];
-  },
+
 
   async headers() {
     return [
@@ -61,7 +43,7 @@ const nextConfig: NextConfig = {
               "default-src 'self';",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline';",
               "style-src 'self' 'unsafe-inline';",
-              `img-src 'self' data: https://${supabaseHostname} https://www.google.com https://*.ytimg.com https://*.youtube.com;`,
+              `img-src 'self' data: https://${supabaseHostname} https://www.google.com https://*.gstatic.com https://*.ytimg.com https://*.youtube.com;`,
               "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com;",
               // 'self' covers /ingest/* proxy so no external PostHog origin needed.
               `connect-src 'self' https://${supabaseHostname} wss://${supabaseHostname} https://www.youtube.com;`,

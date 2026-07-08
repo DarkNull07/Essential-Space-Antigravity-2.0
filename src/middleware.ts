@@ -8,6 +8,31 @@ export async function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 400 });
   }
 
+  // ── PostHog same-origin reverse proxy ────────────────────────────────────
+  // Proxy /ingest/* requests to PostHog with the correct Host header.
+  // This bypasses the Supabase auth checks and fixes Vercel 400/503 errors.
+  const url = request.nextUrl.clone();
+  if (url.pathname.startsWith("/ingest")) {
+    const isStaticOrArray =
+      url.pathname.startsWith("/ingest/static/") ||
+      url.pathname.startsWith("/ingest/array/");
+    const hostname = isStaticOrArray
+      ? "us-assets.i.posthog.com"
+      : "us.i.posthog.com";
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("host", hostname);
+
+    url.protocol = "https";
+    url.hostname = hostname;
+    url.port = "443";
+    url.pathname = url.pathname.replace(/^\/ingest/, "");
+
+    return NextResponse.rewrite(url, {
+      headers: requestHeaders,
+    });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -79,9 +104,9 @@ export const config = {
      * - _next/image    (image optimization)
      * - favicon.ico    (favicon)
      * - auth/callback  (auth flow redirects)
-     * - ingest/*       (PostHog analytics proxy — must bypass auth middleware)
      * - public files   (svg, png, jpg, jpeg, gif, webp)
+     * Note: /ingest/* is matched so that the middleware proxy catches it.
      */
-    "/((?!_next/static|_next/image|favicon.ico|auth/callback|ingest/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -38,7 +38,7 @@ interface CardProps {
   isOverlay?: boolean;
 }
 
-export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
+function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
   const confirm = useConfirm();
   
   const [items, setItems] = useState<any[]>(() => {
@@ -249,7 +249,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
       // Rollback to previous values
       onCardUpdate?.({ ...card, title: prevTitle, content: prevContent, metadata: prevMetadata });
       setLocalContent(prevContent);
-      alert("Failed to save. Please try again.");
+      await confirm({ title: "Save Failed", message: "Failed to save. Please try again.", confirmLabel: "OK", mode: "alert" });
     } finally {
       setSavingNotepad(false);
     }
@@ -268,7 +268,7 @@ export default function Card({ card, onDelete, onCardUpdate, isOverlay = false }
       console.error("Failed to save lightbox title:", err);
       // Rollback to previous title
       onCardUpdate?.({ ...card, title: prevTitle });
-      alert("Failed to save title. Please try again.");
+      await confirm({ title: "Save Failed", message: "Failed to save title. Please try again.", confirmLabel: "OK", mode: "alert" });
     } finally {
       setSavingLightbox(false);
     }
@@ -1267,3 +1267,5 @@ function LinkFavicon({ domain }: { domain: string }) {
     </div>
   );
 }
+
+export default React.memo(Card);

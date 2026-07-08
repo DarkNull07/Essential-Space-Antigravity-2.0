@@ -1,27 +1,26 @@
 import prisma from "@/lib/db";
+import { cache } from "react";
 import { getAuthUser } from "./auth";
 import { maskKey } from "./crypto";
 
-// Page-load identity. This is the ONE place that guarantees a UserProfile row
-// exists (lazy creation moved here from getAuthUser) and returns the full
-// profile including theme fields needed by DashboardClient. Runs once per load.
-export async function getCurrentUser() {
+// Page-load identity. Wrapped in React cache() so multiple RSC calls in a
+// single render tree share one result (zero duplicate DB round trips).
+// Uses findUnique + create instead of upsert to avoid unnecessary write locks
+// on the hot path when the profile already exists (the common case).
+export const getCurrentUser = cache(async () => {
   try {
     const { id, email } = await getAuthUser();
-    const profile = await prisma.userProfile.upsert({
-      where: { email },
-      update: {},
-      create: {
-        id, // Use Supabase user ID as primary key
-        email,
-        selectedTheme: "light-gold",
-      },
-    });
+    let profile = await prisma.userProfile.findUnique({ where: { email } });
+    if (!profile) {
+      profile = await prisma.userProfile.create({
+        data: { id, email, selectedTheme: "light-gold" },
+      });
+    }
     return profile;
   } catch {
     return null;
   }
-}
+});
 
 // Get all categories for current user
 export async function getCategories(userId: string) {

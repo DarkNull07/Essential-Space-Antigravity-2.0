@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import posthog from "posthog-js";
 import {
   DndContext,
@@ -160,7 +160,7 @@ export default function Canvas({
       setIsRenameModalOpen(false);
     } catch (err) {
       console.error("Failed to rename category:", err);
-      alert("Failed to rename category. Please make sure the name is unique.");
+      await confirm({ title: "Rename Failed", message: "Failed to rename category. Please make sure the name is unique.", confirmLabel: "OK", mode: "alert" });
     } finally {
       setRenaming(false);
     }
@@ -221,12 +221,12 @@ export default function Canvas({
           });
 
           if (confirmed) {
-            alert("Data Import Simulation Successful! In a production deployment, your database records will be hydrated.");
+            await confirm({ title: "Import Simulation", message: "Data Import Simulation Successful! In a production deployment, your database records will be hydrated.", confirmLabel: "OK", mode: "alert" });
             setShowProfileMenu(false);
           }
         } catch (err) {
           console.error("Failed to parse import file:", err);
-          alert("Invalid backup file format.");
+          await confirm({ title: "Invalid File", message: "Invalid backup file format.", confirmLabel: "OK", mode: "alert" });
         }
       };
       reader.readAsText(file);
@@ -250,7 +250,7 @@ export default function Canvas({
         window.location.reload();
       } catch (err) {
         console.error("Failed to delete account:", err);
-        alert("Failed to delete account. Please try again.");
+        await confirm({ title: "Delete Failed", message: "Failed to delete account. Please try again.", confirmLabel: "OK", mode: "alert" });
       }
     }
   };
@@ -728,7 +728,22 @@ export default function Canvas({
     }
   };
 
+  // Stable callbacks for Card — memoized so React.memo(Card) can skip re-renders
+  // when Canvas re-renders for unrelated reasons (e.g. typing in the add-card input).
+  // onCardsChange is a React state-setter whose identity is guaranteed stable.
+  const handleCardDelete = useCallback(
+    (id: string) => {
+      onCardsChange((prev) => prev.filter((c) => c.id !== id));
+    },
+    [onCardsChange],
+  );
 
+  const handleCardUpdate = useCallback(
+    (updated: { id: string; type: string; title: string | null; content: string; metadata: any; order: number; categoryId: string | null }) => {
+      onCardsChange((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    },
+    [onCardsChange],
+  );
 
   return (
     <div className="flex-1 flex flex-col min-h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background selection:bg-accent selection:text-white">
@@ -1100,20 +1115,14 @@ export default function Canvas({
                     alignItems: "start",
                   }}
                 >
-                  {filteredCards.map((card) => (
-                    <Card
-                      key={card.id}
-                      card={card}
-                      onDelete={(id) => {
-                        onCardsChange((prev) => prev.filter((c) => c.id !== id));
-                      }}
-                      onCardUpdate={(updated) => {
-                        onCardsChange((prev) =>
-                          prev.map((c) => (c.id === updated.id ? updated : c))
-                        );
-                      }}
-                    />
-                  ))}
+                   {filteredCards.map((card) => (
+                      <Card
+                        key={card.id}
+                        card={card}
+                        onDelete={handleCardDelete}
+                        onCardUpdate={handleCardUpdate}
+                      />
+                    ))}
                 </div>
               );
             }
@@ -1146,14 +1155,8 @@ export default function Canvas({
                       <Card
                         key={card.id}
                         card={card}
-                        onDelete={(id) => {
-                          onCardsChange((prev) => prev.filter((c) => c.id !== id));
-                        }}
-                        onCardUpdate={(updated) => {
-                          onCardsChange((prev) =>
-                            prev.map((c) => (c.id === updated.id ? updated : c))
-                          );
-                        }}
+                        onDelete={handleCardDelete}
+                        onCardUpdate={handleCardUpdate}
                       />
                     ))}
                   </div>

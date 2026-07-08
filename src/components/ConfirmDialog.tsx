@@ -7,6 +7,8 @@ interface ConfirmOptions {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** When "alert", the Cancel button is hidden — use for error/info notices. */
+  mode?: "confirm" | "alert";
 }
 
 interface ConfirmContextType {
@@ -40,6 +42,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const handleCancel = () => settle(false);
   const handleConfirm = () => settle(true);
 
+  const isAlert = current?.options.mode === "alert";
+
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
@@ -54,7 +58,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           <div className="bg-background text-foreground border-2 border-foreground shadow-[6px_6px_0px_0px_var(--foreground,#000)] max-w-md w-full p-6 space-y-6 animate-scale-in">
             <div className="space-y-2">
               <span className="font-mono text-xs uppercase tracking-widest text-accent font-semibold block">
-                * 03. CONFIRMATION
+                {isAlert ? "* 03. NOTICE" : "* 03. CONFIRMATION"}
               </span>
               <h3 className="font-display font-bold text-xl uppercase tracking-tight text-foreground">
                 {current.options.title}
@@ -65,12 +69,14 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={handleCancel}
-                className="font-mono text-xs uppercase border-2 border-foreground bg-background text-foreground px-4 py-2.5 font-bold hover:bg-muted transition-all active:translate-x-[1px] active:translate-y-[1px]"
-              >
-                {current.options.cancelLabel || "Cancel"}
-              </button>
+              {!isAlert && (
+                <button
+                  onClick={handleCancel}
+                  className="font-mono text-xs uppercase border-2 border-foreground bg-background text-foreground px-4 py-2.5 font-bold hover:bg-muted transition-all active:translate-x-[1px] active:translate-y-[1px]"
+                >
+                  {current.options.cancelLabel || "Cancel"}
+                </button>
+              )}
               <button
                 onClick={handleConfirm}
                 className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:shadow-[1px_1px_0px_0px_var(--foreground,#000)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
