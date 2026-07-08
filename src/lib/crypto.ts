@@ -1,20 +1,30 @@
 import crypto from "crypto";
 
+// Resolve the encryption key from environment variables.
+// Accepted format: exactly 64 lowercase-or-uppercase hex characters (= 32 bytes for AES-256).
+//
+// If the variable is missing OR in the wrong format, we throw immediately at module
+// load time so misconfiguration causes a loud startup crash rather than silently
+// encrypting user data under a weak or publicly-known key.
 const hexKey = process.env.API_KEY_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
-let ENCRYPTION_KEY: Buffer;
 
-if (hexKey) {
-  if (hexKey.length === 64) {
-    ENCRYPTION_KEY = Buffer.from(hexKey, "hex");
-  } else {
-    ENCRYPTION_KEY = Buffer.alloc(32);
-    const keyBuf = Buffer.from(hexKey, "utf8");
-    keyBuf.copy(ENCRYPTION_KEY);
-  }
-} else {
-  // Static development fallback (32-byte key)
-  ENCRYPTION_KEY = Buffer.from("f5e718b52f36f6d0f522384a20b0c6194488339ab301b0f592cfdf36a8e80556", "hex");
+if (!hexKey) {
+  throw new Error(
+    "[crypto] Missing required environment variable: API_KEY_ENCRYPTION_KEY (or ENCRYPTION_KEY).\n" +
+    "Set it to a 64-character hex string (32 random bytes in hex). " +
+    "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+  );
 }
+
+if (!/^[0-9a-fA-F]{64}$/.test(hexKey)) {
+  throw new Error(
+    `[crypto] API_KEY_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes). ` +
+    `Got ${hexKey.length} characters. ` +
+    "Generate a valid key with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+  );
+}
+
+const ENCRYPTION_KEY: Buffer = Buffer.from(hexKey, "hex");
 
 /**
  * Encrypt a text string using AES-256-GCM
