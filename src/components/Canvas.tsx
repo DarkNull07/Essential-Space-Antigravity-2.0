@@ -17,7 +17,6 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil, CheckSquare, Key } from "lucide-react";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
@@ -26,6 +25,44 @@ import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAc
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle } from "@/lib/utils";
+
+/**
+ * Custom sorting strategy for the masonry CSS grid.
+ *
+ * rectSortingStrategy emits scaleX/scaleY = newRect.size / oldRect.size for
+ * every displaced item. In a uniform grid those ratios are always 1.0 (no
+ * visible effect). In a masonry grid each card has a different height stored
+ * as `gridRowEnd: span N`, so the ratios diverge and physically stretch/shrink
+ * the cards during drag — that is the distortion bug.
+ *
+ * This strategy keeps the same x/y translation that rectSortingStrategy would
+ * produce (computed identically via arrayMove on the rects array), but always
+ * sets scaleX = 1 and scaleY = 1 so cards never change size during drag.
+ */
+function masonrySortingStrategy({
+  rects,
+  activeIndex,
+  overIndex,
+  index,
+}: {
+  rects: Array<{ left: number; top: number; width: number; height: number }>;
+  activeIndex: number;
+  overIndex: number;
+  index: number;
+}): { x: number; y: number; scaleX: number; scaleY: number } | null {
+  const newRects = arrayMove(rects, overIndex, activeIndex);
+  const oldRect = rects[index];
+  const newRect = newRects[index];
+
+  if (!newRect || !oldRect) return null;
+
+  return {
+    x: newRect.left - oldRect.left,
+    y: newRect.top - oldRect.top,
+    scaleX: 1,   // never scale — cards keep their own dimensions
+    scaleY: 1,
+  };
+}
 
 interface Category {
   id: string;
@@ -1094,7 +1131,7 @@ export default function Canvas({
               >
                 <SortableContext
                   items={filteredCards.map((c) => String(c.id))}
-                  strategy={rectSortingStrategy}
+                  strategy={masonrySortingStrategy}
                 >
                   <div
                     style={{
