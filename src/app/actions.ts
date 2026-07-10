@@ -5,19 +5,23 @@ import { revalidatePath } from "next/cache";
 import { getAuthUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { encrypt, decrypt, maskKey } from "@/lib/crypto";
+import { stripHashtags } from "@/lib/utils";
 
-async function fetchYouTubeOEmbedTitle(url: string): Promise<string> {
+async function fetchYouTubeOEmbedData(url: string): Promise<{ title: string; author_name: string } | null> {
   try {
     const res = await fetch(
       `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
       { signal: AbortSignal.timeout(3000) }
     );
-    if (!res.ok) return "";
+    if (!res.ok) return null;
     const data = await res.json();
-    return data && typeof data.title === "string" ? data.title : "";
+    return {
+      title: data && typeof data.title === "string" ? data.title : "",
+      author_name: data && typeof data.author_name === "string" ? data.author_name : "",
+    };
   } catch (err) {
     console.error("Server-side YouTube oEmbed fetch failed:", err);
-    return "";
+    return null;
   }
 }
 
@@ -103,6 +107,8 @@ export async function createCard(
   }
 
   let updatedMetadata = metadata || null;
+  let finalTitle = title;
+  
   if (type === "LINK") {
     try {
       const isYouTube = content.includes("youtube.com") || content.includes("youtu.be");
@@ -110,11 +116,16 @@ export async function createCard(
         const incomingMetadata = metadata || {};
         const currentDesc = incomingMetadata.description;
         if (!currentDesc || typeof currentDesc !== "string" || currentDesc.trim() === "") {
-          const fetchedTitle = await fetchYouTubeOEmbedTitle(content);
-          updatedMetadata = {
-            ...incomingMetadata,
-            description: fetchedTitle || "",
-          };
+          const oEmbedData = await fetchYouTubeOEmbedData(content);
+          if (oEmbedData) {
+            updatedMetadata = {
+              ...incomingMetadata,
+              description: stripHashtags(oEmbedData.title),
+            };
+            if (!finalTitle || finalTitle.trim() === "") {
+              finalTitle = oEmbedData.author_name;
+            }
+          }
         }
       }
     } catch (err) {
@@ -131,7 +142,7 @@ export async function createCard(
     data: {
       type,
       content: finalContent,
-      title: title || null,
+      title: finalTitle || null,
       metadata: updatedMetadata,
       order: count,
       categoryId,
@@ -286,6 +297,7 @@ export async function updateCard(
     finalContent = encrypt(content);
   }
 
+  let finalTitle = title;
   let updatedMetadata = metadata;
   if (existingCard.type === "LINK") {
     try {
@@ -294,11 +306,16 @@ export async function updateCard(
         const incomingMetadata = metadata || {};
         const currentDesc = incomingMetadata.description;
         if (!currentDesc || typeof currentDesc !== "string" || currentDesc.trim() === "") {
-          const fetchedTitle = await fetchYouTubeOEmbedTitle(content);
-          updatedMetadata = {
-            ...incomingMetadata,
-            description: fetchedTitle || "",
-          };
+          const oEmbedData = await fetchYouTubeOEmbedData(content);
+          if (oEmbedData) {
+            updatedMetadata = {
+              ...incomingMetadata,
+              description: stripHashtags(oEmbedData.title),
+            };
+            if (!finalTitle || finalTitle.trim() === "") {
+              finalTitle = oEmbedData.author_name;
+            }
+          }
         }
       }
     } catch (err) {
@@ -311,7 +328,7 @@ export async function updateCard(
     where: { id, userId: user.id },
     data: {
       content: finalContent,
-      title: title !== undefined ? title : undefined,
+      title: finalTitle !== undefined ? finalTitle : undefined,
       metadata: updatedMetadata !== undefined ? updatedMetadata : undefined,
     },
   });

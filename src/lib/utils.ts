@@ -121,4 +121,8 @@ export function getDomain(url: string): string {
   }
 }
 
-
+export function stripHashtags(title: string): string {
+  if (!title) return "";
+  // Removes #word tokens and extra whitespace
+  return title.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+}

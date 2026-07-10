@@ -7,8 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2 } from "lucide-react";
 import { deleteCard, updateCard, revealApiKey } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
-import { sanitizeTitle, base64ToString, stringToBase64, getDomain } from "@/lib/utils";
-
+import { sanitizeTitle, base64ToString, stringToBase64, getDomain, stripHashtags } from "@/lib/utils";
 
 // Only allow safe URL schemes in hrefs to block javascript:/data: stored-XSS.
 function safeExternalHref(raw: string | null | undefined): string {
@@ -1173,7 +1172,7 @@ function InlineLinkWidget({ url }: { url: string }) {
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.title && active) {
-          setTitle(data.title);
+          setTitle(stripHashtags(data.title));
         }
       } catch (err) {
         console.error("Inline oEmbed fetch failed:", err);
@@ -1218,7 +1217,7 @@ function InlineLinkWidget({ url }: { url: string }) {
         }`}>
           {url}
         </span>
-        <span className={`text-sm font-bold break-words line-clamp-2 ${
+        <span className={`text-sm font-bold break-words ${
           isDark ? "text-white" : "text-black"
         }`}>
           {title || url}
