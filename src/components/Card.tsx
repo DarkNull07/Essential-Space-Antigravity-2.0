@@ -533,7 +533,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
                 />
                 
                 <div className="flex flex-col min-w-0 flex-grow">
-                  <h4 className="font-sans font-bold text-sm uppercase tracking-tight line-clamp-2 leading-tight">
+                  <h4 className="font-sans font-bold text-sm uppercase tracking-tight leading-tight">
                     {sanitizeTitle(card.title, card.content)}
                   </h4>
                   <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground line-clamp-1 mt-0.5">
