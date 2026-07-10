@@ -691,9 +691,15 @@ export default function Canvas({
         }
         const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
-        const sanitizedTitle = sanitizeTitle(title.trim() || null, content.trim());
+        const isYouTubeUrl = content.trim().includes("youtube.com") || content.trim().includes("youtu.be");
+        const rawTitle = title.trim() || null;
+        // For blank-titled YouTube links, pass null so the server can fill in
+        // the channel name instead of a domain-based fallback like "Youtube".
+        const sanitizedTitle = (isYouTubeUrl && !rawTitle)
+          ? null
+          : sanitizeTitle(rawTitle, content.trim());
 
-        created = await createCard("LINK", content.trim(), catId, sanitizedTitle, {
+        created = await createCard("LINK", content.trim(), catId, sanitizedTitle ?? undefined, {
           domain,
           favicon,
         });
