@@ -146,8 +146,8 @@ export default function Canvas({
   const [renameName, setRenameName] = useState("");
   const [renaming, setRenaming] = useState(false);
 
-  const handleRenameCategorySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRenameCategorySubmit = async (e?: React.FormEvent | Event) => {
+    if (e) e.preventDefault();
     if (!activeCategory || renaming) return;
     const trimmed = renameName.trim();
     if (!trimmed) return;
@@ -165,6 +165,23 @@ export default function Canvas({
       setRenaming(false);
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isRenameModalOpen) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsRenameModalOpen(false);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleRenameCategorySubmit(e);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRenameModalOpen, activeCategory, renameName, renaming]);
 
   const handleThemeChange = async (themeId: string) => {
     onThemeChange(themeId);

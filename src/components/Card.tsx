@@ -848,24 +848,42 @@ function NotepadModal({
 
 
 
+  const handleSave = (e?: React.SyntheticEvent | KeyboardEvent) => {
+    if (e) {
+      if ('stopPropagation' in e) e.stopPropagation();
+    }
+    onSave(title, content, description);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (!isOpen) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
+      } else if (e.key === "Enter") {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "TEXTAREA") {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSave(e);
+          }
+        } else if (target.tagName === "INPUT") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSave(e);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, title, content, description, onSave]);
 
   if (!isOpen || !mounted || typeof window === "undefined" || !document.body) {
     return null;
   }
-
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSave(title, content, description);
-  };
 
   return createPortal(
     <div
@@ -1013,15 +1031,25 @@ function ImageLightbox({
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (!isOpen) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
+      } else if (e.key === "Enter") {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "INPUT") {
+          e.preventDefault();
+          e.stopPropagation();
+          onSave(title);
+        }
       }
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, title, onSave]);
 
   if (!isOpen || !mounted || typeof window === "undefined" || !document.body) {
     return null;
@@ -1030,13 +1058,6 @@ function ImageLightbox({
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSave(title);
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.stopPropagation();
-      onSave(title);
-    }
   };
 
   return createPortal(
@@ -1094,7 +1115,6 @@ function ImageLightbox({
             placeholder="UNTITLED IMAGE"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={handleInputKeyDown}
             className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10 text-foreground"
           />
         </div>

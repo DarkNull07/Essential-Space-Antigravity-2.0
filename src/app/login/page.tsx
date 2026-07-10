@@ -34,6 +34,19 @@ export default function LoginPage() {
     status: 'online'
   });
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!systemNotice.open) return;
+      if (e.key === "Escape" || e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        setSystemNotice(prev => ({ ...prev, open: false }));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [systemNotice.open]);
+
   const handleStatusCheck = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {

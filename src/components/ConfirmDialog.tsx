@@ -44,6 +44,23 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 
   const isAlert = current?.options.mode === "alert";
 
+  React.useEffect(() => {
+    if (!current) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCancel();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleConfirm();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [current]);
+
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
