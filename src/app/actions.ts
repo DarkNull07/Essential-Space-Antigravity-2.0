@@ -117,6 +117,7 @@ export async function createCard(
         const currentDesc = incomingMetadata.description;
         if (!currentDesc || typeof currentDesc !== "string" || currentDesc.trim() === "") {
           const oEmbedData = await fetchYouTubeOEmbedData(content);
+          console.log("[YT DEBUG]", JSON.stringify(oEmbedData)); // ADD THIS LINE
           if (oEmbedData) {
             updatedMetadata = {
               ...incomingMetadata,
