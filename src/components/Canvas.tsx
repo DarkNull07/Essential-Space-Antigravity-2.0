@@ -681,7 +681,14 @@ export default function Canvas({
 
     try {
       let created;
-      if (cardType === "LINK") {
+      const trimmedContent = content.trim();
+      // Same URL pattern already used elsewhere (Card.tsx's inline-link detection)
+      const isUrlOnly = /^https?:\/\/\S+$/.test(trimmedContent);
+      // If a TEXT snippet is *nothing but* a single URL, treat it as if
+      // WEB LINK was selected — same title/favicon/channel-name logic applies.
+      const effectiveType = (cardType === "TEXT" && isUrlOnly) ? "LINK" : cardType;
+
+      if (effectiveType === "LINK") {
         // Scrape domain and favicon from URL
         let domain = "";
         try {
