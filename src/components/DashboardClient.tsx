@@ -16,6 +16,7 @@ interface Category {
   id: string;
   name: string;
   order: number;
+  parentId?: string | null;
 }
 
 interface Card {
@@ -42,7 +43,13 @@ export default function DashboardClient({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [cards, setCards] = useState<Card[]>(initialCards);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
   const [theme, setTheme] = useState(user.theme || user.selectedTheme);
+
+  const handleSelectCategory = (id: string | null) => {
+    setActiveCategoryId(id);
+    setActiveSubcategoryId(null);
+  };
 
   // Synchronize state when initialCategories / initialCards change from server side (router.refresh())
   useEffect(() => {
@@ -92,8 +99,10 @@ export default function DashboardClient({
         <Sidebar
           categories={categories}
           activeCategoryId={activeCategoryId}
+          activeSubcategoryId={activeSubcategoryId}
           cardCounts={cardCounts}
-          onSelectCategory={setActiveCategoryId}
+          onSelectCategory={handleSelectCategory}
+          onSelectSubcategory={setActiveSubcategoryId}
           onCategoriesChange={setCategories}
           uploadProgress={uploadProgress}
           theme={theme}
@@ -103,7 +112,10 @@ export default function DashboardClient({
           user={{ ...user, selectedTheme: theme }}
           onThemeChange={setTheme}
           activeCategory={activeCategory}
+          activeSubcategoryId={activeSubcategoryId}
+          setActiveSubcategoryId={setActiveSubcategoryId}
           categories={categories}
+          onCategoriesChange={setCategories}
           cards={cards}
           onCardsChange={setCards}
           onUploadStart={(filename) => setUploadProgress({ filename, progress: 0 })}

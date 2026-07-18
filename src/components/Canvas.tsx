@@ -21,7 +21,7 @@ import {
 import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil, CheckSquare, Key } from "lucide-react";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Card from "./Card";
-import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAccount, renameCategory, getLiveStorageMetrics } from "@/app/actions";
+import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAccount, renameCategory, getLiveStorageMetrics, createCategory } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle } from "@/lib/utils";
@@ -68,6 +68,7 @@ interface Category {
   id: string;
   name: string;
   order: number;
+  parentId?: string | null;
 }
 
 interface CardType {
@@ -90,7 +91,10 @@ interface CanvasProps {
   currentTheme: string;
   onThemeChange: (theme: string) => void;
   activeCategory: Category | null;
+  activeSubcategoryId: string | null;
+  setActiveSubcategoryId: (id: string | null) => void;
   categories: Category[];
+  onCategoriesChange: (categories: Category[]) => void;
   cards: CardType[];
   onCardsChange: React.Dispatch<React.SetStateAction<CardType[]>>;
   onUploadStart: (filename: string) => void;
@@ -103,7 +107,10 @@ export default function Canvas({
   currentTheme,
   onThemeChange,
   activeCategory,
+  activeSubcategoryId,
+  setActiveSubcategoryId,
   categories,
+  onCategoriesChange,
   cards,
   onCardsChange,
   onUploadStart,
@@ -118,7 +125,10 @@ export default function Canvas({
   const confirm = useConfirm();
 
   const filteredCards = cards
-    .filter((c) => (activeCategory ? c.categoryId === activeCategory.id : true))
+    .filter((c) => {
+      const targetId = activeSubcategoryId ?? activeCategory?.id;
+      return targetId ? c.categoryId === targetId : true;
+    })
     .sort((a, b) => a.order - b.order);
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -146,6 +156,10 @@ export default function Canvas({
   const [renameName, setRenameName] = useState("");
   const [renaming, setRenaming] = useState(false);
 
+  const [newSubName, setNewSubName] = useState("");
+  const [creatingSub, setCreatingSub] = useState(false);
+  const [showAddSub, setShowAddSub] = useState(false);
+
   const handleRenameCategorySubmit = async (e?: React.FormEvent | Event) => {
     if (e) e.preventDefault();
     if (!activeCategory || renaming) return;
@@ -156,13 +170,38 @@ export default function Canvas({
     const prevCategories = categories;
     setRenaming(true);
     try {
-      await renameCategory(activeCategory.id, trimmed);
+      const targetId = activeSubcategoryId ?? activeCategory.id;
+      await renameCategory(targetId, trimmed);
       setIsRenameModalOpen(false);
     } catch (err) {
       console.error("Failed to rename category:", err);
       await confirm({ title: "Rename Failed", message: "Failed to rename category. Please make sure the name is unique.", confirmLabel: "OK", mode: "alert" });
     } finally {
       setRenaming(false);
+    }
+  };
+
+  const handleCreateSubcategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubName.trim() || creatingSub || !activeCategory) return;
+
+    setCreatingSub(true);
+    try {
+      const created = await createCategory(newSubName.trim(), activeCategory.id);
+      onCategoriesChange([...categories, created]);
+      setActiveSubcategoryId(created.id);
+      setNewSubName("");
+      setShowAddSub(false);
+    } catch (err) {
+      console.error("Failed to create subcategory:", err);
+      await confirm({
+        title: "Creation Failed",
+        message: "A subcategory with this name already exists. Please choose a unique name.",
+        confirmLabel: "Close",
+        mode: "alert",
+      });
+    } finally {
+      setCreatingSub(false);
     }
   };
 
@@ -694,7 +733,7 @@ export default function Canvas({
     if (!content.trim() || submitting) return;
 
     setSubmitting(true);
-    const catId = activeCategory ? activeCategory.id : null;
+    const catId = activeSubcategoryId ?? activeCategory?.id ?? null;
 
     try {
       let created;
@@ -800,17 +839,30 @@ export default function Canvas({
       <header className="flex flex-wrap gap-2 justify-between items-center border-b border-foreground/10 pb-4 lg:h-16">
         <div className="space-y-1">
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest block font-semibold">
-            {activeCategory ? `* 03. CATEGORY / ${activeCategory.name}` : "* 03. ALL INSTANCES"}
+            {activeCategory 
+              ? activeSubcategoryId 
+                ? `* 03. CATEGORY / ${activeCategory.name} / ${categories.find(c => c.id === activeSubcategoryId)?.name}`
+                : `* 03. CATEGORY / ${activeCategory.name}`
+              : "* 03. ALL INSTANCES"}
           </span>
           <div className="flex items-center space-x-2 group">
             <h2 className="font-display font-black text-2xl uppercase tracking-tighter text-foreground">
-              {activeCategory ? activeCategory.name : "PRIMARY CANVAS"}
+              {activeCategory 
+                ? activeSubcategoryId 
+                  ? categories.find(c => c.id === activeSubcategoryId)?.name 
+                  : activeCategory.name 
+                : "PRIMARY CANVAS"}
             </h2>
             {activeCategory && (
               <button
                 onClick={() => {
-                  setRenameName(activeCategory.name); // Pre-populate!
-                  setIsRenameModalOpen(true);
+                  const targetCat = activeSubcategoryId 
+                    ? categories.find(c => c.id === activeSubcategoryId) 
+                    : activeCategory;
+                  if (targetCat) {
+                    setRenameName(targetCat.name); // Pre-populate!
+                    setIsRenameModalOpen(true);
+                  }
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-accent transition-all cursor-pointer text-muted-foreground"
                 title="Rename Category"
@@ -1004,11 +1056,88 @@ export default function Canvas({
         </div>
       </header>
 
+      {/* Subcategory Tab Bar */}
+      {activeCategory && (
+        <div className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2">
+          {/* Main category tab */}
+          <button
+            onClick={() => setActiveSubcategoryId(null)}
+            className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
+              activeSubcategoryId === null
+                ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
+                : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
+            }`}
+          >
+            {activeCategory.name}
+          </button>
+          
+          {/* Subcategory tabs */}
+          {categories
+            .filter((c) => c.parentId === activeCategory.id)
+            .sort((a, b) => a.order - b.order)
+            .map((sub) => (
+              <button
+                key={sub.id}
+                onClick={() => setActiveSubcategoryId(sub.id)}
+                className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
+                  activeSubcategoryId === sub.id
+                    ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
+                    : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                }`}
+              >
+                {sub.name}
+              </button>
+            ))}
+            
+          {/* "+" tab */}
+          {showAddSub ? (
+            <form onSubmit={handleCreateSubcategorySubmit} className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="NEW SUBCATEGORY"
+                value={newSubName}
+                onChange={(e) => setNewSubName(e.target.value)}
+                className="bg-card border-2 border-foreground px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent h-10"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={creatingSub}
+                className="bg-accent text-white border-2 border-foreground px-3 py-1.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer h-10"
+              >
+                {creatingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddSub(false);
+                  setNewSubName("");
+                }}
+                className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer h-10"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowAddSub(true)}
+              className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+            >
+              + Add Sub
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Quick Add Form Section */}
       <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
-            * ADD CARD TO {activeCategory ? activeCategory.name : "INBOX"}
+            * ADD CARD TO {activeCategory 
+              ? activeSubcategoryId 
+                ? categories.find(c => c.id === activeSubcategoryId)?.name 
+                : activeCategory.name 
+              : "INBOX"}
           </span>
           <div className="flex flex-wrap gap-2">
             <button

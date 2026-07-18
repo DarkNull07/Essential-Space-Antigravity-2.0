@@ -20,16 +20,19 @@ model UserProfile {
 }
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String
-  order     Int      
-  userId    String
-  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards     Card[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String      @id @default(uuid())
+  name           String
+  order          Int      
+  userId         String
+  user           UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards          Card[]
+  parentId       String?
+  parent         Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subcategories  Category[]  @relation("CategoryHierarchy")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  @@unique([userId, name])
+  @@unique([userId, parentId, name])
   @@index([userId, order])
 }
 

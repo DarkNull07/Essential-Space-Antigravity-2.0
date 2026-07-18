@@ -26,12 +26,24 @@ async function fetchYouTubeOEmbedData(url: string): Promise<{ title: string; aut
 }
 
 // Create a new category
-export async function createCategory(name: string) {
+export async function createCategory(name: string, parentId?: string) {
   const user = await getAuthUser();
   
-  // Calculate next order value
+  if (parentId) {
+    const parent = await prisma.category.findFirst({
+      where: { id: parentId, userId: user.id },
+    });
+    if (!parent) {
+      throw new Error("Parent category not found or unauthorized");
+    }
+    if (parent.parentId) {
+      throw new Error("Cannot create a subcategory under an existing subcategory (maximum 2-level hierarchy exceeded)");
+    }
+  }
+
+  // Calculate next order value scoped by parentId
   const count = await prisma.category.count({
-    where: { userId: user.id },
+    where: { userId: user.id, parentId: parentId || null },
   });
 
   const category = await prisma.category.create({
@@ -39,6 +51,7 @@ export async function createCategory(name: string) {
       name,
       order: count,
       userId: user.id,
+      parentId: parentId || null,
     },
   });
 

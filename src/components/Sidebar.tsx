@@ -30,13 +30,16 @@ interface Category {
   id: string;
   name: string;
   order: number;
+  parentId?: string | null;
 }
 
 interface SidebarProps {
   categories: Category[];
   activeCategoryId: string | null;
+  activeSubcategoryId: string | null;
   cardCounts: Record<string, number>;
   onSelectCategory: (id: string | null) => void;
+  onSelectSubcategory: (id: string | null) => void;
   onCategoriesChange: (categories: Category[]) => void;
   uploadProgress: { filename: string; progress: number } | null;
   theme?: string;
@@ -75,6 +78,8 @@ function SortableCategoryItem({
       ref={setNodeRef}
       style={style}
       className={`border-2 border-foreground p-3 flex justify-between items-center transition-all ${
+        category.parentId ? "ml-4 w-[calc(100%-1rem)]" : ""
+      } ${
         isActive
           ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)]"
           : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)]"
@@ -131,8 +136,10 @@ function SortableCategoryItem({
 export default function Sidebar({
   categories,
   activeCategoryId,
+  activeSubcategoryId,
   cardCounts,
   onSelectCategory,
+  onSelectSubcategory,
   onCategoriesChange,
   uploadProgress,
   theme = "light-gold",
@@ -154,22 +161,67 @@ export default function Sidebar({
     })
   );
 
+  const topLevelCategories = categories
+    .filter((c) => !c.parentId)
+    .sort((a, b) => a.order - b.order);
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = categories.findIndex((c) => String(c.id) === String(active.id));
-    const newIndex = categories.findIndex((c) => String(c.id) === String(over.id));
+    const oldIndex = topLevelCategories.findIndex((c) => String(c.id) === String(active.id));
+    const newIndex = topLevelCategories.findIndex((c) => String(c.id) === String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(categories, oldIndex, newIndex);
-    onCategoriesChange(reordered);
+    const reorderedTopLevel = arrayMove(topLevelCategories, oldIndex, newIndex);
+
+    const updatedCategories: Category[] = [];
+    reorderedTopLevel.forEach((parent) => {
+      updatedCategories.push(parent);
+      const parentSubcats = categories.filter((c) => c.parentId === parent.id).sort((a, b) => a.order - b.order);
+      updatedCategories.push(...parentSubcats);
+    });
+
+    onCategoriesChange(updatedCategories);
 
     try {
-      await updateCategoryOrder(reordered.map((c) => String(c.id)));
+      await updateCategoryOrder(reorderedTopLevel.map((c) => String(c.id)));
     } catch (err) {
       console.error("Error updating category order in DB:", err);
+    }
+  };
+
+  const handleSubDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeSubcats = categories.filter((c) => c.parentId === activeCategoryId).sort((a, b) => a.order - b.order);
+    const oldIndex = activeSubcats.findIndex((c) => String(c.id) === String(active.id));
+    const newIndex = activeSubcats.findIndex((c) => String(c.id) === String(over.id));
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedSubcats = arrayMove(activeSubcats, oldIndex, newIndex);
+
+    const updatedCategories: Category[] = [];
+    const topLevel = categories.filter((c) => !c.parentId).sort((a, b) => a.order - b.order);
+    topLevel.forEach((parent) => {
+      updatedCategories.push(parent);
+      if (parent.id === activeCategoryId) {
+        updatedCategories.push(...reorderedSubcats);
+      } else {
+        const parentSubcats = categories.filter((c) => c.parentId === parent.id).sort((a, b) => a.order - b.order);
+        updatedCategories.push(...parentSubcats);
+      }
+    });
+
+    onCategoriesChange(updatedCategories);
+
+    try {
+      await updateCategoryOrder(reorderedSubcats.map((c) => String(c.id)));
+    } catch (err) {
+      console.error("Error updating subcategory order in DB:", err);
     }
   };
 
@@ -262,7 +314,7 @@ export default function Sidebar({
         </div>
 
         {/* Sortable Category List */}
-        {mounted && categories.length > 0 ? (
+        {mounted && topLevelCategories.length > 0 ? (
           <DndContext
             id="sidebar-categories-dnd"
             sensors={sensors}
@@ -270,18 +322,58 @@ export default function Sidebar({
             onDragEnd={handleDragEnd}
             modifiers={[restrictToParentElement]}
           >
-            <SortableContext items={categories.map((c) => String(c.id))} strategy={verticalListSortingStrategy}>
+            <SortableContext items={topLevelCategories.map((c) => String(c.id))} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
-                {categories.map((cat) => (
-                  <SortableCategoryItem
-                    key={cat.id}
-                    category={cat}
-                    isActive={activeCategoryId === cat.id}
-                    count={cardCounts[cat.id] || 0}
-                    onClick={() => onSelectCategory(cat.id)}
-                    onDelete={handleDeleteCategory}
-                  />
-                ))}
+                {topLevelCategories.map((cat) => {
+                  const subcats = categories
+                    .filter((c) => c.parentId === cat.id)
+                    .sort((a, b) => a.order - b.order);
+
+                  return (
+                    <div key={cat.id} className="space-y-3">
+                      <SortableCategoryItem
+                        category={cat}
+                        isActive={activeCategoryId === cat.id && activeSubcategoryId === null}
+                        count={cardCounts[cat.id] || 0}
+                        onClick={() => onSelectCategory(cat.id)}
+                        onDelete={handleDeleteCategory}
+                      />
+                      {activeCategoryId === cat.id && subcats.length > 0 && (
+                        <div
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="space-y-3"
+                        >
+                          <DndContext
+                            id={`subcategories-dnd-${cat.id}`}
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleSubDragEnd}
+                            modifiers={[restrictToParentElement]}
+                          >
+                            <SortableContext
+                              items={subcats.map((c) => String(c.id))}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-3">
+                                {subcats.map((sub) => (
+                                  <SortableCategoryItem
+                                    key={sub.id}
+                                    category={sub}
+                                    isActive={activeSubcategoryId === sub.id}
+                                    count={cardCounts[sub.id] || 0}
+                                    onClick={() => onSelectSubcategory(sub.id)}
+                                    onDelete={handleDeleteCategory}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>
