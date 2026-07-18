@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
   closestCenter,
@@ -264,7 +265,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-full lg:w-80 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
+    <aside className="w-full lg:w-80 flex flex-col border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
       {/* Brand & User Profile */}
       <header className="flex justify-between items-end border-b border-foreground/10 pb-4 lg:h-16">
         <Link
@@ -282,7 +283,7 @@ export default function Sidebar({
       </header>
 
       {/* Category List */}
-      <div className="flex-1 flex flex-col space-y-4 pt-4 min-h-[250px]">
+      <div className="flex flex-col space-y-4 pt-4">
         <span className="font-mono text-xs text-accent uppercase tracking-widest block font-semibold">
           * 01. ACTIVE CATEGORIES
         </span>
@@ -356,16 +357,26 @@ export default function Sidebar({
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-3">
-                                {subcats.map((sub) => (
-                                  <SortableCategoryItem
-                                    key={sub.id}
-                                    category={sub}
-                                    isActive={activeSubcategoryId === sub.id}
-                                    count={cardCounts[sub.id] || 0}
-                                    onClick={() => onSelectSubcategory(sub.id)}
-                                    onDelete={handleDeleteCategory}
-                                  />
-                                ))}
+                                <AnimatePresence initial={false}>
+                                  {subcats.map((sub) => (
+                                    <motion.div
+                                      key={sub.id}
+                                      layout
+                                      initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                                    >
+                                      <SortableCategoryItem
+                                        category={sub}
+                                        isActive={activeSubcategoryId === sub.id}
+                                        count={cardCounts[sub.id] || 0}
+                                        onClick={() => onSelectSubcategory(sub.id)}
+                                        onDelete={handleDeleteCategory}
+                                      />
+                                    </motion.div>
+                                  ))}
+                                </AnimatePresence>
                               </div>
                             </SortableContext>
                           </DndContext>
@@ -406,7 +417,7 @@ export default function Sidebar({
       </div>
 
       {/* Upload Status / Progress (Left Column Bottom) */}
-      <div className="pt-4 border-t border-foreground/10 space-y-3">
+      <div className="pt-4 border-t border-foreground/10 space-y-3 mt-auto flex-shrink-0">
         <span className="font-mono text-xs text-accent uppercase tracking-widest block font-semibold">
           * 02. SYSTEM LOGS
         </span>

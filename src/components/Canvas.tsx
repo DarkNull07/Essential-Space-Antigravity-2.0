@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import posthog from "posthog-js";
 import {
   DndContext,
@@ -130,6 +131,10 @@ export default function Canvas({
       return targetId ? c.categoryId === targetId : true;
     })
     .sort((a, b) => a.order - b.order);
+
+  const hasSubcategories = activeCategory
+    ? categories.some((c) => c.parentId === activeCategory.id)
+    : false;
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -1056,11 +1061,146 @@ export default function Canvas({
         </div>
       </header>
 
+      {/* Quick Add Form Section or Selection Message */}
+      {activeCategory && activeSubcategoryId === null && hasSubcategories ? (
+        <div className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] text-center">
+          <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground block">
+            * Select a subcategory to add cards here
+          </span>
+        </div>
+      ) : (
+        <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
+            <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
+              * ADD CARD TO {activeCategory 
+                ? activeSubcategoryId 
+                  ? categories.find(c => c.id === activeSubcategoryId)?.name 
+                  : activeCategory.name 
+                : "INBOX"}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  setCardType("TEXT");
+                  setContent("");
+                }}
+                type="button"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "TEXT"
+                    ? "bg-foreground text-background"
+                    : "bg-card hover:bg-muted text-foreground"
+                  }`}
+              >
+                <Type className="w-3.5 h-3.5" />
+                Text Snippet
+              </button>
+              <button
+                onClick={() => {
+                  setCardType("LINK");
+                  setContent("");
+                }}
+                type="button"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "LINK"
+                    ? "bg-foreground text-background"
+                    : "bg-card hover:bg-muted text-foreground"
+                  }`}
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Web Link
+              </button>
+              <button
+                onClick={() => {
+                  setCardType("CHECKLIST");
+                  setContent("");
+                }}
+                type="button"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "CHECKLIST"
+                    ? "bg-foreground text-background"
+                    : "bg-card hover:bg-muted text-foreground"
+                  }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                Checklist
+              </button>
+              <button
+                onClick={() => {
+                  setCardType("API_KEY");
+                  setContent("");
+                }}
+                type="button"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "API_KEY"
+                    ? "bg-foreground text-background"
+                    : "bg-card hover:bg-muted text-foreground"
+                  }`}
+              >
+                <Key className="w-3.5 h-3.5" />
+                API Key
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleCreateCard} className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-1 space-y-1">
+                <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Card Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="LABEL / NAME"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-background border-2 border-foreground px-3 py-2 font-sans text-xs uppercase focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
+                />
+              </div>
+              <div className="md:col-span-2 space-y-1">
+                <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                  {cardType === "TEXT" && "Snippet Text / Markdown"}
+                  {cardType === "LINK" && "URL Address"}
+                  {cardType === "CHECKLIST" && "Checklist Items (One per line)"}
+                  {cardType === "API_KEY" && "Secret Key String"}
+                </label>
+                <div className="flex gap-2 items-start">
+                  {cardType === "TEXT" || cardType === "CHECKLIST" ? (
+                    <textarea
+                      ref={textareaRef}
+                      placeholder={cardType === "TEXT" ? "Enter notes, code blocks, URLs, or checklists (- [ ] task)..." : "Item 1\nItem 2\nItem 3"}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      required
+                      rows={1}
+                      className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-[40px] overflow-hidden"
+                    />
+                  ) : (
+                    <input
+                      type={cardType === "LINK" ? "url" : "text"}
+                      placeholder={cardType === "LINK" ? "https://example.com/resource" : "sk_live_..."}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      required
+                      className="flex-grow bg-background border-2 border-foreground px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+                    />
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer h-10 flex-shrink-0"
+                  >
+                    {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                    COMMIT
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>
+      )}
+
       {/* Subcategory Tab Bar */}
       {activeCategory && (
-        <div className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2">
+        <div className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2 overflow-hidden">
           {/* Main category tab */}
-          <button
+          <motion.button
+            layout
             onClick={() => setActiveSubcategoryId(null)}
             className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
               activeSubcategoryId === null
@@ -1069,191 +1209,87 @@ export default function Canvas({
             }`}
           >
             {activeCategory.name}
-          </button>
+          </motion.button>
           
           {/* Subcategory tabs */}
-          {categories
-            .filter((c) => c.parentId === activeCategory.id)
-            .sort((a, b) => a.order - b.order)
-            .map((sub) => (
-              <button
-                key={sub.id}
-                onClick={() => setActiveSubcategoryId(sub.id)}
-                className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
-                  activeSubcategoryId === sub.id
-                    ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
-                    : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
-                }`}
-              >
-                {sub.name}
-              </button>
-            ))}
+          <AnimatePresence initial={false}>
+            {categories
+              .filter((c) => c.parentId === activeCategory.id)
+              .sort((a, b) => a.order - b.order)
+              .map((sub) => (
+                <motion.button
+                  key={sub.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  onClick={() => setActiveSubcategoryId(sub.id)}
+                  className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
+                    activeSubcategoryId === sub.id
+                      ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
+                      : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                  }`}
+                >
+                  {sub.name}
+                </motion.button>
+              ))}
+          </AnimatePresence>
             
           {/* "+" tab */}
-          {showAddSub ? (
-            <form onSubmit={handleCreateSubcategorySubmit} className="flex gap-2 items-center">
-              <input
-                type="text"
-                placeholder="NEW SUBCATEGORY"
-                value={newSubName}
-                onChange={(e) => setNewSubName(e.target.value)}
-                className="bg-card border-2 border-foreground px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent h-10"
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={creatingSub}
-                className="bg-accent text-white border-2 border-foreground px-3 py-1.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer h-10"
+          <AnimatePresence mode="wait">
+            {showAddSub ? (
+              <motion.form
+                key="add-sub-form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                onSubmit={handleCreateSubcategorySubmit}
+                className="flex gap-2 items-center"
               >
-                {creatingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddSub(false);
-                  setNewSubName("");
-                }}
-                className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer h-10"
-              >
-                Cancel
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowAddSub(true)}
-              className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
-            >
-              + Add Sub
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Quick Add Form Section */}
-      <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
-          <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
-            * ADD CARD TO {activeCategory 
-              ? activeSubcategoryId 
-                ? categories.find(c => c.id === activeSubcategoryId)?.name 
-                : activeCategory.name 
-              : "INBOX"}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setCardType("TEXT");
-                setContent("");
-              }}
-              type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "TEXT"
-                  ? "bg-foreground text-background"
-                  : "bg-card hover:bg-muted text-foreground"
-                }`}
-            >
-              <Type className="w-3.5 h-3.5" />
-              Text Snippet
-            </button>
-            <button
-              onClick={() => {
-                setCardType("LINK");
-                setContent("");
-              }}
-              type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "LINK"
-                  ? "bg-foreground text-background"
-                  : "bg-card hover:bg-muted text-foreground"
-                }`}
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              Web Link
-            </button>
-            <button
-              onClick={() => {
-                setCardType("CHECKLIST");
-                setContent("");
-              }}
-              type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "CHECKLIST"
-                  ? "bg-foreground text-background"
-                  : "bg-card hover:bg-muted text-foreground"
-                }`}
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-              Checklist
-            </button>
-            <button
-              onClick={() => {
-                setCardType("API_KEY");
-                setContent("");
-              }}
-              type="button"
-              className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "API_KEY"
-                  ? "bg-foreground text-background"
-                  : "bg-card hover:bg-muted text-foreground"
-                }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              API Key
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleCreateCard} className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-1 space-y-1">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-                Card Title (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="LABEL / NAME"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-background border-2 border-foreground px-3 py-2 font-sans text-xs uppercase focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50"
-              />
-            </div>
-            <div className="md:col-span-2 space-y-1">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-                {cardType === "TEXT" && "Snippet Text / Markdown"}
-                {cardType === "LINK" && "URL Address"}
-                {cardType === "CHECKLIST" && "Checklist Items (One per line)"}
-                {cardType === "API_KEY" && "Secret Key String"}
-              </label>
-              <div className="flex gap-2 items-start">
-                {cardType === "TEXT" || cardType === "CHECKLIST" ? (
-                  <textarea
-                    ref={textareaRef}
-                    placeholder={cardType === "TEXT" ? "Enter notes, code blocks, URLs, or checklists (- [ ] task)..." : "Item 1\nItem 2\nItem 3"}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    required
-                    rows={1}
-                    className="flex-grow bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-[40px] overflow-hidden"
-                  />
-                ) : (
-                  <input
-                    type={cardType === "LINK" ? "url" : "text"}
-                    placeholder={cardType === "LINK" ? "https://example.com/resource" : "sk_live_..."}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    required
-                    className="flex-grow bg-background border-2 border-foreground px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
-                  />
-                )}
+                <input
+                  type="text"
+                  placeholder="NEW SUBCATEGORY"
+                  value={newSubName}
+                  onChange={(e) => setNewSubName(e.target.value)}
+                  className="bg-card border-2 border-foreground px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase focus:outline-none focus:ring-1 focus:ring-accent h-10"
+                  autoFocus
+                />
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer h-10 flex-shrink-0"
+                  disabled={creatingSub}
+                  className="bg-accent text-white border-2 border-foreground px-3 py-1.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer h-10"
                 >
-                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                  COMMIT
+                  {creatingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 </button>
-              </div>
-            </div>
-          </div>
-        </form>
-      </section>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddSub(false);
+                    setNewSubName("");
+                  }}
+                  className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer h-10"
+                >
+                  Cancel
+                </button>
+              </motion.form>
+            ) : (
+              <motion.button
+                key="add-sub-button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                onClick={() => setShowAddSub(true)}
+                className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+              >
+                + Add Sub
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Grid Canvas Sortable Section */}
       <section className="flex-grow">
