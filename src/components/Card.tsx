@@ -367,7 +367,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
       ref={isOverlay ? null : setCombinedRef}
       style={combinedStyle}
       className={`bg-card border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)] flex flex-col group relative overflow-hidden select-text transition-all ${
-        isOverlay ? "pointer-events-none select-none" : "hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_var(--foreground)]"
+        isOverlay ? "pointer-events-none select-none" : "hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[5px_5px_0px_0px_var(--foreground)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
       } ${
         isDragging ? "opacity-30 border-dashed border-foreground/30 bg-background/50 shadow-none hover:translate-x-0 hover:translate-y-0 hover:shadow-none" : ""
       }`}
@@ -664,7 +664,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
               />
               <button
                 type="submit"
-                className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-2.5 font-display font-bold text-[9px] uppercase tracking-wider shadow-[1px_1px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[0.5px] hover:translate-y-[0.5px] transition-all flex items-center justify-center h-7 cursor-pointer"
+                className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-2.5 font-display font-bold text-[9px] uppercase tracking-wider shadow-[1px_1px_0px_0px_var(--foreground)] hover:-translate-x-[0.5px] hover:-translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_var(--foreground)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center h-7 cursor-pointer"
               >
                 ADD
               </button>
@@ -701,7 +701,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
                     setRevealKey(false);
                   }
                 }}
-                className="flex-1 bg-background hover:bg-muted border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] font-bold"
+                className="flex-1 bg-background hover:bg-muted border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] hover:-translate-x-[0.5px] hover:-translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_var(--foreground)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none font-bold"
               >
                 {revealKey ? (
                   <>
@@ -719,7 +719,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
               </button>
               <button
                 onClick={handleCopyKey}
-                className={`flex-1 border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] font-bold ${
+                className={`flex-1 border-2 border-foreground h-8 font-mono text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[1px_1px_0px_0px_var(--foreground)] hover:-translate-x-[0.5px] hover:-translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_var(--foreground)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none font-bold ${
                   copied ? "bg-emerald-500 text-white border-emerald-600 shadow-none translate-x-[0.5px] translate-y-[0.5px]" : "bg-accent hover:bg-[#E04B28] text-white"
                 }`}
               >
@@ -749,7 +749,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
             e.stopPropagation();
             setIsNotepadOpen(true);
           }}
-          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
           title="Open Notepad Editor"
         >
           <Pencil className="w-3.5 h-3.5" />
@@ -759,7 +759,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
       {(card.type === "TEXT" || card.type === "FILE") && (
         <button
           onClick={handleDownloadTxt}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
           title="Download as .txt"
         >
           <Download className="w-3.5 h-3.5" />
@@ -772,7 +772,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
             e.stopPropagation();
             setIsNotepadOpen(true);
           }}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
           title="Edit Link Card"
         >
           <Pencil className="w-3.5 h-3.5" />
@@ -781,7 +781,7 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
 
       <button
         onClick={handleDelete}
-        className="absolute bottom-2 right-[8px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] cursor-pointer"
+        className="absolute bottom-2 right-[8px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
         title="Delete Card"
       >
         <Trash2 className="w-3.5 h-3.5" />
@@ -972,11 +972,8 @@ function NotepadModal({
         <div className="flex justify-end space-x-3 pt-2">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold"
+            onClick={onClose}
+            className="h-10 px-4 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             Cancel
           </button>
@@ -984,7 +981,7 @@ function NotepadModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center gap-1.5"
+            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center gap-1.5"
           >
             {saving ? (
               <>
@@ -1127,7 +1124,7 @@ function ImageLightbox({
               e.stopPropagation();
               onClose();
             }}
-            className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold"
+            className="h-10 px-4 border-2 border-foreground font-mono text-xs uppercase bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-bold"
           >
             Cancel
           </button>
@@ -1135,7 +1132,7 @@ function ImageLightbox({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center gap-1.5"
+            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center gap-1.5"
           >
             {saving ? (
               <>

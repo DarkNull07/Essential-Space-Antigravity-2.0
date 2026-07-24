@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import posthog from "posthog-js";
 import {
   DndContext,
@@ -124,6 +124,7 @@ export default function Canvas({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const confirm = useConfirm();
+  const shouldReduceMotion = useReducedMotion();
 
   const filteredCards = cards
     .filter((c) => {
@@ -687,52 +688,6 @@ export default function Canvas({
     };
   }, [onCardsChange, onUploadStart, onUploadProgress, onUploadEnd]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    if (activeId === overId) return;
-
-    const activeIndex = filteredCards.findIndex((c) => String(c.id) === activeId);
-    const overIndex = filteredCards.findIndex((c) => String(c.id) === overId);
-
-    if (activeIndex === -1 || overIndex === -1) return;
-
-    const reorderedFiltered = arrayMove(filteredCards, activeIndex, overIndex);
-
-    const updatedFiltered = reorderedFiltered.map((c, index) => ({
-      ...c,
-      order: index,
-    }));
-
-    const updatedCards = cards.map((c) => {
-      const match = updatedFiltered.find((uf) => uf.id === c.id);
-      return match ? match : c;
-    });
-
-    onCardsChange(updatedCards);
-
-    try {
-      await updateCardsOrder(updatedFiltered.map((c) => c.id));
-    } catch (err) {
-      console.error("Failed to save reordered cards:", err);
-      onCardsChange(cards); // revert the optimistic reorder
-      await confirm({
-        title: "Reorder Failed",
-        message: "Your new card order couldn't be saved, so it's been reverted.",
-        confirmLabel: "Close",
-      });
-    }
-  };
-
   const handleCreateCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || submitting) return;
@@ -757,48 +712,94 @@ export default function Canvas({
         } catch {
           domain = content.trim();
         }
-        const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        
+        // Pass null for Youtube URLs when user left title blank so server auto-fills channel name
+        const isYoutubeUrl = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i.test(trimmedContent);
+        const effectiveTitle = isYoutubeUrl
+          ? (title.trim() || null)
+          : sanitizeTitle(title.trim() || null, content.trim());
 
-        const isYouTubeUrl = content.trim().includes("youtube.com") || content.trim().includes("youtu.be");
-        const rawTitle = title.trim() || null;
-        // For blank-titled YouTube links, pass null so the server can fill in
-        // the channel name instead of a domain-based fallback like "Youtube".
-        const sanitizedTitle = (isYouTubeUrl && !rawTitle)
-          ? null
-          : sanitizeTitle(rawTitle, content.trim());
-
-        created = await createCard("LINK", content.trim(), catId, sanitizedTitle ?? undefined, {
+        created = await createCard("LINK", content.trim(), catId, effectiveTitle ?? undefined, {
           domain,
-          favicon,
+          favicon: faviconUrl,
         });
       } else if (cardType === "CHECKLIST") {
-        const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
-        const checklistItems = lines.map((text, idx) => ({
+        // Parse lines into item objects
+        const rawLines = content.split("\n").filter((l) => l.trim().length > 0);
+        const checklistItems = rawLines.map((line, idx) => ({
           id: `${Date.now()}-${idx}`,
-          text,
-          checked: false
+          text: line.replace(/^-\s*\[[ xX]\]\s*/, "").trim(), // Strip Markdown checkbox syntax if pasted
+          checked: /^-\s*\[[xX]\]/.test(line.trim()),
         }));
+
         created = await createCard("CHECKLIST", content.trim(), catId, title.trim() || "Checklist", {
-          items: checklistItems
+          items: checklistItems,
         });
       } else if (cardType === "API_KEY") {
-        created = await createCard("API_KEY", content.trim(), catId, title.trim() || "API Key", {});
+        created = await createCard("API_KEY", content.trim(), catId, title.trim() || undefined);
       } else {
+        // Plain text / snippet
         created = await createCard("TEXT", content.trim(), catId, title.trim() || undefined);
       }
 
-      onCardsChange((prev) => [...prev, created]);
-      setContent("");
+      onCardsChange((prev) => [created, ...prev]);
       setTitle("");
-    } catch (err) {
+      setContent("");
+      posthog.capture("card_created", { type: cardType });
+    } catch (err: any) {
       console.error("Error creating card:", err);
       await confirm({
-        title: "Couldn't Save Card",
-        message: "Something went wrong creating your card. Please try again.",
+        title: "Creation Failed",
+        message: err.message || "Failed to create card. Please check your inputs.",
         confirmLabel: "Close",
+        mode: "alert",
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) return;
+
+    // Scope reordering calculations to only cards in the current category/subcategory view
+    const targetCatId = activeSubcategoryId ?? activeCategory?.id ?? null;
+
+    const oldIndex = filteredCards.findIndex((c) => String(c.id) === String(active.id));
+    const newIndex = filteredCards.findIndex((c) => String(c.id) === String(over.id));
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedFiltered = arrayMove(filteredCards, oldIndex, newIndex);
+
+    // Re-assign category-scoped order indexes cleanly (0, 1, 2...)
+    const updatedFiltered = reorderedFiltered.map((c, i) => ({
+      ...c,
+      order: i,
+    }));
+
+    // Merge reordered category subset back into the global state without corrupting other categories
+    onCardsChange((prevAll) => {
+      const otherCards = prevAll.filter((c) =>
+        targetCatId ? c.categoryId !== targetCatId : c.categoryId !== null
+      );
+      return [...updatedFiltered, ...otherCards];
+    });
+
+    try {
+      await updateCardsOrder(
+        updatedFiltered.map((c) => String(c.id))
+      );
+    } catch (err) {
+      console.error("Error updating cards order in DB:", err);
     }
   };
 
@@ -819,8 +820,23 @@ export default function Canvas({
     [onCardsChange],
   );
 
+  const fadeUpVariant = {
+    hidden: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: shouldReduceMotion
+        ? { duration: 0 }
+        : {
+            duration: 0.4,
+            ease: [0.2, 0.7, 0.2, 1],
+            delay: i * 0.06,
+          },
+    }),
+  };
+
   return (
-    <div className="flex-1 flex flex-col min-h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background selection:bg-accent selection:text-white">
+    <div className="flex-1 flex flex-col min-h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background bg-canvas-grid selection:bg-accent selection:text-white">
       {/* Drag Border Outline Overlay */}
       {isDragActive && (
         <div
@@ -841,7 +857,13 @@ export default function Canvas({
       )}
 
       {/* Canvas Top Navigation / Status Header */}
-      <header className="flex flex-wrap gap-2 justify-between items-center border-b border-foreground/10 pb-4 lg:h-16">
+      <motion.header
+        custom={1}
+        initial="hidden"
+        animate="visible"
+        variants={fadeUpVariant}
+        className="flex flex-wrap gap-2 justify-between items-center border-b border-foreground/10 pb-4 lg:h-16"
+      >
         <div className="space-y-1">
           <span className="font-mono text-[10px] text-accent uppercase tracking-widest block font-semibold">
             {activeCategory 
@@ -886,7 +908,7 @@ export default function Canvas({
                 setShowThemeMenu(!showThemeMenu);
                 setShowProfileMenu(false);
               }}
-              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
+              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
             >
               <Palette className="w-3.5 h-3.5 text-accent" />
               THEME
@@ -965,7 +987,7 @@ export default function Canvas({
               }
               handleThemeChange(nextTheme);
             }}
-            className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] px-3 flex items-center justify-center transition-all cursor-pointer font-bold select-none"
+            className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none px-3 flex items-center justify-center transition-all cursor-pointer font-bold select-none"
             title="Toggle Light/Dark Mode"
           >
             {currentTheme.startsWith("dark-") ? (
@@ -983,7 +1005,7 @@ export default function Canvas({
                 setShowProfileMenu(!showProfileMenu);
                 setShowThemeMenu(false);
               }}
-              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[11px] px-3 flex items-center gap-1.5 transition-all cursor-pointer font-semibold select-none"
+              className="h-10 bg-card hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-mono text-[11px] px-3 flex items-center gap-1.5 transition-all cursor-pointer font-semibold select-none"
             >
               <User className="w-3.5 h-3.5 text-accent" />
               <span className="hidden sm:inline truncate max-w-[150px]">{user.email}</span>
@@ -1053,23 +1075,35 @@ export default function Canvas({
           {/* End Session Button */}
           <button
             onClick={handleLogout}
-            className="h-10 bg-muted hover:bg-accent hover:text-white text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
+            className="h-10 bg-muted hover:bg-accent hover:text-white text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-mono text-[10px] uppercase px-3 flex items-center gap-1.5 transition-all cursor-pointer font-bold select-none"
           >
             <LogOut className="w-3.5 h-3.5" />
             End Session
           </button>
         </div>
-      </header>
+      </motion.header>
 
       {/* Quick Add Form Section or Selection Message */}
       {activeCategory && activeSubcategoryId === null && hasSubcategories ? (
-        <div className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] text-center">
+        <motion.div
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUpVariant}
+          className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] text-center"
+        >
           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground block">
             * Select a subcategory to add cards here
           </span>
-        </div>
+        </motion.div>
       ) : (
-        <section className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4">
+        <motion.section
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUpVariant}
+          className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4"
+        >
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
             <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
               * ADD CARD TO {activeCategory 
@@ -1085,7 +1119,7 @@ export default function Canvas({
                   setContent("");
                 }}
                 type="button"
-                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "TEXT"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${cardType === "TEXT"
                     ? "bg-foreground text-background"
                     : "bg-card hover:bg-muted text-foreground"
                   }`}
@@ -1099,7 +1133,7 @@ export default function Canvas({
                   setContent("");
                 }}
                 type="button"
-                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "LINK"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${cardType === "LINK"
                     ? "bg-foreground text-background"
                     : "bg-card hover:bg-muted text-foreground"
                   }`}
@@ -1113,7 +1147,7 @@ export default function Canvas({
                   setContent("");
                 }}
                 type="button"
-                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "CHECKLIST"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${cardType === "CHECKLIST"
                     ? "bg-foreground text-background"
                     : "bg-card hover:bg-muted text-foreground"
                   }`}
@@ -1127,7 +1161,7 @@ export default function Canvas({
                   setContent("");
                 }}
                 type="button"
-                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] ${cardType === "API_KEY"
+                className={`h-10 px-3 border-2 border-foreground font-mono text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${cardType === "API_KEY"
                     ? "bg-foreground text-background"
                     : "bg-card hover:bg-muted text-foreground"
                   }`}
@@ -1183,7 +1217,7 @@ export default function Canvas({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer h-10 flex-shrink-0"
+                    className="bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground px-4 py-2 font-display font-bold text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-1.5 cursor-pointer h-10 flex-shrink-0"
                   >
                     {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
                     COMMIT
@@ -1192,20 +1226,26 @@ export default function Canvas({
               </div>
             </div>
           </form>
-        </section>
+        </motion.section>
       )}
 
       {/* Subcategory Tab Bar */}
       {activeCategory && (
-        <div className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2 overflow-hidden">
+        <motion.div
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUpVariant}
+          className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2 overflow-hidden"
+        >
           {/* Main category tab */}
           <motion.button
             layout
             onClick={() => setActiveSubcategoryId(null)}
             className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
               activeSubcategoryId === null
-                ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
-                : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             }`}
           >
             {activeCategory.name}
@@ -1227,8 +1267,8 @@ export default function Canvas({
                   onClick={() => setActiveSubcategoryId(sub.id)}
                   className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
                     activeSubcategoryId === sub.id
-                      ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--foreground)]"
-                      : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                      ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                      : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                   }`}
                 >
                   {sub.name}
@@ -1259,7 +1299,7 @@ export default function Canvas({
                 <button
                   type="submit"
                   disabled={creatingSub}
-                  className="bg-accent text-white border-2 border-foreground px-3 py-1.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer h-10"
+                  className="bg-accent text-white border-2 border-foreground px-3 py-1.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer h-10"
                 >
                   {creatingSub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 </button>
@@ -1269,7 +1309,7 @@ export default function Canvas({
                     setShowAddSub(false);
                     setNewSubName("");
                   }}
-                  className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer h-10"
+                  className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer h-10 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                 >
                   Cancel
                 </button>
@@ -1282,17 +1322,23 @@ export default function Canvas({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 onClick={() => setShowAddSub(true)}
-                className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                className="px-3 py-1.5 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               >
                 + Add Sub
               </motion.button>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
 
       {/* Grid Canvas Sortable Section */}
-      <section className="flex-grow">
+      <motion.section
+        custom={4}
+        initial="hidden"
+        animate="visible"
+        variants={fadeUpVariant}
+        className="flex-grow"
+      >
         {filteredCards.length > 0 ? (
           (() => {
             const activeCard = mounted ? cards.find((c) => String(c.id) === activeId) : undefined;
@@ -1384,7 +1430,7 @@ export default function Canvas({
             </div>
           )
         )}
-      </section>
+      </motion.section>
 
       {/* Neo-Brutalist Rename Category Modal */}
       {isRenameModalOpen && activeCategory && (
@@ -1428,14 +1474,14 @@ export default function Canvas({
                 <button
                   type="button"
                   onClick={() => setIsRenameModalOpen(false)}
-                  className="px-4 py-2 border-2 border-foreground bg-muted hover:bg-foreground/10 font-mono text-[10px] uppercase font-bold cursor-pointer"
+                  className="px-4 py-2 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-[10px] uppercase font-bold cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={renaming || !renameName.trim()}
-                  className="px-4 py-2 border-2 border-foreground bg-accent text-white font-mono text-[10px] uppercase font-bold shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 border-2 border-foreground bg-accent text-white font-mono text-[10px] uppercase font-bold shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   {renaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
                 </button>

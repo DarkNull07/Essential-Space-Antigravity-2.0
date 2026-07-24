@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   DndContext,
   closestCenter,
@@ -82,8 +82,8 @@ function SortableCategoryItem({
         category.parentId ? "ml-4 w-[calc(100%-1rem)]" : ""
       } ${
         isActive
-          ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)]"
-          : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)]"
+          ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
       }`}
     >
       {/* Clickable Area for Selection & Drag */}
@@ -149,6 +149,8 @@ export default function Sidebar({
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMounted(true);
@@ -264,8 +266,29 @@ export default function Sidebar({
     }
   };
 
+  const fadeUpVariant = {
+    hidden: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: shouldReduceMotion
+        ? { duration: 0 }
+        : {
+            duration: 0.4,
+            ease: [0.2, 0.7, 0.2, 1],
+            delay: i * 0.06,
+          },
+    }),
+  };
+
   return (
-    <aside className="w-full lg:w-80 flex flex-col border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto">
+    <motion.aside
+      custom={0}
+      initial="hidden"
+      animate="visible"
+      variants={fadeUpVariant}
+      className="w-full lg:w-80 flex flex-col border-b lg:border-b-0 lg:border-r border-foreground bg-background p-6 space-y-8 select-none lg:h-screen lg:overflow-y-auto"
+    >
       {/* Brand & User Profile */}
       <header className="flex justify-between items-end border-b border-foreground/10 pb-4 lg:h-16">
         <Link
@@ -293,8 +316,8 @@ export default function Sidebar({
           onClick={() => onSelectCategory(null)}
           className={`border-2 border-foreground p-3 flex items-center justify-between cursor-pointer transition-all ${
             activeCategoryId === null
-              ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--accent)]"
-              : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+              ? "bg-foreground text-background shadow-[2px_2px_0px_0px_var(--accent)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--accent)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           }`}
         >
           <div className="flex items-center space-x-3">
@@ -409,7 +432,7 @@ export default function Sidebar({
           <button
             type="submit"
             disabled={addingCat}
-            className="bg-accent text-white border-2 border-foreground p-2.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center cursor-pointer"
+            className="bg-accent text-white border-2 border-foreground p-2.5 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer"
           >
             {addingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           </button>
@@ -438,11 +461,15 @@ export default function Sidebar({
           </div>
         ) : (
           <div className="font-mono text-[9px] text-muted-foreground uppercase leading-relaxed bg-muted border border-foreground/5 p-3 space-y-1">
-            <p className="text-foreground/80 font-bold">READY // SYNC ACTIVE</p>
+            <p className="text-foreground/80 font-bold flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent inline-block rounded-none animate-pulse-dot shrink-0" />
+              READY // SYNC ACTIVE
+            </p>
             <p>DRAG N DROP FILES FROM DESKTOP ANYTIME</p>
           </div>
         )}
       </div>
-    </aside>
+    </motion.aside>
   );
 }
+

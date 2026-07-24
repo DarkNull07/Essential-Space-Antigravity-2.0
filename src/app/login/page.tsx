@@ -381,7 +381,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
               >
                 {authView === 'signup'
                   ? (loading ? "Creating Account..." : "Create Account")
@@ -411,7 +411,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
               >
                 {loading ? "SENDING..." : "SEND RESET INSTRUCTIONS"}
               </button>
@@ -468,7 +468,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                className="w-full bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
               >
                 {loading ? "UPDATING..." : "UPDATE PASSWORD"}
               </button>
@@ -522,7 +522,7 @@ export default function LoginPage() {
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full bg-background hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:shadow-[1px_1px_0px_0px_var(--foreground)] hover:translate-x-[1px] hover:translate-y-[1px] py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+                className="w-full bg-background hover:bg-muted text-foreground border-2 border-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none py-3.5 px-4 font-display font-bold text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
               >
                 {/* Google Icon SVG */}
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -616,7 +616,7 @@ export default function LoginPage() {
             </div>
             <button
               onClick={() => setSystemNotice((prev) => ({ ...prev, open: false }))}
-              className="self-end m-4 px-4 py-1.5 border-2 border-black bg-[#ff4500] text-white font-mono text-xs font-bold rounded-none uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer"
+              className="self-end m-4 px-4 py-1.5 border-2 border-foreground bg-accent text-white font-mono text-xs font-bold rounded-none uppercase shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
             >
               Close
             </button>

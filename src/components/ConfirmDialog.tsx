@@ -89,14 +89,14 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               {!isAlert && (
                 <button
                   onClick={handleCancel}
-                  className="font-mono text-xs uppercase border-2 border-foreground bg-background text-foreground px-4 py-2.5 font-bold hover:bg-muted transition-all active:translate-x-[1px] active:translate-y-[1px]"
+                  className="font-mono text-xs uppercase border-2 border-foreground bg-background hover:bg-muted text-foreground px-4 py-2.5 font-bold shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                 >
                   {current.options.cancelLabel || "Cancel"}
                 </button>
               )}
               <button
                 onClick={handleConfirm}
-                className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:shadow-[1px_1px_0px_0px_var(--foreground,#000)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
               >
                 {current.options.confirmLabel || "Confirm"}
               </button>
