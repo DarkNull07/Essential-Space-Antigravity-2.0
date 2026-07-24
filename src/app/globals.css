@@ -84,6 +84,28 @@
   animation: pulseDot 1.6s ease-in-out infinite;
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none !important;
+    transform: none !important;
+  }
+  .animate-pulse-dot {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
@@ -93,4 +115,5 @@ textarea:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent) !important;
   border-color: var(--accent) !important;
 }
+
 

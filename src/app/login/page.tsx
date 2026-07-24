@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
+import { Type, Link2, CheckSquare, Key } from "lucide-react";
 
 const supabase = createClient();
 
@@ -236,45 +237,147 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background flex flex-col justify-between p-8 md:p-16 text-foreground selection:bg-accent selection:text-white">
-      {/* Top Navigation */}
-      <header className="flex justify-between items-center border-b border-foreground pb-6">
+    <main className="min-h-screen bg-background flex flex-col justify-between p-6 sm:p-8 md:p-12 text-foreground selection:bg-accent selection:text-white">
+      {/* Top Navigation Header */}
+      <header className="flex justify-between items-center border-b border-foreground pb-5">
         <div className="flex items-center space-x-3">
           <Logo size={28} className="text-foreground" />
           <span className="font-display font-semibold tracking-wider text-xl uppercase hidden sm:inline">
             Essential Space
           </span>
         </div>
-        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground bg-muted px-2.5 py-1 border border-foreground/10">
+        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground bg-muted px-2.5 py-1 border border-foreground/10 flex items-center gap-1.5 font-bold">
+          <span className="w-2 h-2 bg-accent inline-block rounded-none animate-pulse-dot shrink-0" />
           SYS // INITIALIZED
         </span>
       </header>
 
+      {/* Marquee Ticker Strip */}
+      <div className="w-full overflow-hidden bg-muted/40 border-b border-foreground/10 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground select-none group my-2">
+        <div className="animate-marquee flex items-center space-x-8 group-hover:[animation-play-state:paused]">
+          <div className="flex items-center space-x-8 shrink-0">
+            <span>CAPTURE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ORGANIZE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>PERSIST</span>
+            <span className="text-accent font-bold">*</span>
+            <span>SPATIAL FOCUS</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ZERO CLUTTER</span>
+            <span className="text-accent font-bold">*</span>
+          </div>
+          <div className="flex items-center space-x-8 shrink-0" aria-hidden="true">
+            <span>CAPTURE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ORGANIZE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>PERSIST</span>
+            <span className="text-accent font-bold">*</span>
+            <span>SPATIAL FOCUS</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ZERO CLUTTER</span>
+            <span className="text-accent font-bold">*</span>
+          </div>
+          <div className="flex items-center space-x-8 shrink-0" aria-hidden="true">
+            <span>CAPTURE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ORGANIZE</span>
+            <span className="text-accent font-bold">*</span>
+            <span>PERSIST</span>
+            <span className="text-accent font-bold">*</span>
+            <span>SPATIAL FOCUS</span>
+            <span className="text-accent font-bold">*</span>
+            <span>ZERO CLUTTER</span>
+            <span className="text-accent font-bold">*</span>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 py-12">
-        {/* Left Side: Art Statement */}
-        <div className="flex-1 max-w-lg space-y-6">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 py-6">
+        {/* Left Side: Art Statement & Abstract Board Preview */}
+        <div className="flex-1 max-w-lg space-y-5">
           <span className="font-mono text-xs text-accent uppercase tracking-widest block font-semibold">
             * 01. THE MANIFESTO
           </span>
-          <h2 className="font-display font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.1] uppercase tracking-tighter">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl lg:text-5xl leading-[1.1] uppercase tracking-tighter">
             Digital Canvas for Structured Minds.
           </h2>
           <p className="font-sans text-muted-foreground text-sm leading-relaxed max-w-md">
             Essential Space replaces chaotic clutter with a rigid, neo-brutalist gallery layout. Drop files from your desktop, capture inspirations, compile snippets, and preserve spatial focus.
           </p>
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-foreground/10">
+          <div className="grid grid-cols-3 gap-3 pt-3 border-t border-foreground/10">
             <div>
-              <span className="font-mono text-xs text-muted-foreground block">01 / CAPTURE</span>
-              <span className="font-sans text-xs font-medium">Drag-and-drop anything</span>
+              <span className="font-mono text-xs text-muted-foreground block font-bold">01 / CAPTURE</span>
+              <span className="font-sans text-xs font-medium text-foreground/80">Drag-and-drop anything</span>
             </div>
             <div>
-              <span className="font-mono text-xs text-muted-foreground block">02 / ORGANIZE</span>
-              <span className="font-sans text-xs font-medium">Asymmetric sorting grids</span>
+              <span className="font-mono text-xs text-muted-foreground block font-bold">02 / ORGANIZE</span>
+              <span className="font-sans text-xs font-medium text-foreground/80">Asymmetric sorting grids</span>
             </div>
             <div>
-              <span className="font-mono text-xs text-muted-foreground block">03 / PERSIST</span>
-              <span className="font-sans text-xs font-medium">Monospaced metadata</span>
+              <span className="font-mono text-xs text-muted-foreground block font-bold">03 / PERSIST</span>
+              <span className="font-sans text-xs font-medium text-foreground/80">Monospaced metadata</span>
+            </div>
+          </div>
+
+          {/* Abstract Board Preview Panel */}
+          <div className="pt-2">
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Text Snippet Tile */}
+              <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_0px_var(--foreground)] p-2.5 space-y-2">
+                <div className="flex items-center space-x-1.5">
+                  <Type className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">Snippet</span>
+                </div>
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="bg-foreground/15 h-1.5 w-full" />
+                  <div className="bg-foreground/15 h-1.5 w-4/5" />
+                  <div className="bg-foreground/15 h-1.5 w-2/3" />
+                </div>
+              </div>
+
+              {/* Web Link Tile */}
+              <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_0px_var(--foreground)] p-2.5 space-y-2">
+                <div className="flex items-center space-x-1.5">
+                  <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">Web Link</span>
+                </div>
+                <div className="flex items-center space-x-1.5 pt-1">
+                  <div className="w-3 h-3 rounded-full bg-foreground/25 shrink-0" />
+                  <div className="bg-foreground/15 h-1.5 w-full" />
+                </div>
+              </div>
+
+              {/* Checklist Tile */}
+              <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_0px_var(--foreground)] p-2.5 space-y-2">
+                <div className="flex items-center space-x-1.5">
+                  <CheckSquare className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">Checklist</span>
+                </div>
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center space-x-1.5">
+                    <div className="w-2.5 h-2.5 border border-foreground/40 bg-background shrink-0" />
+                    <div className="bg-foreground/15 h-1.5 w-3/4" />
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <div className="w-2.5 h-2.5 border border-foreground/40 bg-background shrink-0" />
+                    <div className="bg-foreground/15 h-1.5 w-1/2" />
+                  </div>
+                </div>
+              </div>
+
+              {/* API Key Tile */}
+              <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_0px_var(--foreground)] p-2.5 space-y-2">
+                <div className="flex items-center space-x-1.5">
+                  <Key className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">API Key</span>
+                </div>
+                <div className="border border-foreground/20 bg-background px-2 py-0.5 font-mono text-[9px] tracking-widest text-muted-foreground font-bold">
+                  ••••••••••••
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -298,6 +401,7 @@ export default function LoginPage() {
               {authView === 'update' && "Choose a new password for your account."}
             </p>
           </div>
+          {/* Remainder of Auth Card unchanged ... */}
 
           {message && (
             <div
@@ -539,46 +643,70 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-foreground/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-muted-foreground">
-        <span>© 2026 ESSENTIAL SPACE. ALL RIGHTS RESERVED.</span>
-        <div className="flex gap-6">
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setSystemNotice({
-                open: true,
-                title: "SEC_MONITOR // RLS",
-                message: "SECURITY MONITOR: END-TO-END SUPABASE ROW LEVEL SECURITY (RLS) ACTIVE.",
-                status: 'online'
-              });
-            }}
-            className="hover:text-accent transition-colors"
-          >
-            SECURITY
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setSystemNotice({
-                open: true,
-                title: "API_ENGINE // PRIV",
-                message: "DOCUMENTATION: PLATFORM API ENGINE INTEGRATION IS CURRENTLY PRIVATE.",
-                status: 'online'
-              });
-            }}
-            className="hover:text-accent transition-colors"
-          >
-            API DOCS
-          </a>
-          <a
-            href="#"
-            onClick={handleStatusCheck}
-            className="hover:text-accent transition-colors"
-          >
-            STATUS
-          </a>
+      <footer className="border-t-2 border-foreground pt-6 pb-2 space-y-4 text-xs font-mono">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          {/* Brand Information */}
+          <div className="space-y-1 max-w-sm">
+            <div className="flex items-center space-x-2">
+              <Logo size={18} className="text-foreground" />
+              <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">
+                Essential Space
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-sans">
+              Digital canvas for structured minds. Neo-brutalist gallery layout for spatial focus.
+            </p>
+          </div>
+
+          {/* Real Functional Action Buttons */}
+          <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setSystemNotice({
+                  open: true,
+                  title: "SEC_MONITOR // RLS",
+                  message: "SECURITY MONITOR: END-TO-END SUPABASE ROW LEVEL SECURITY (RLS) ACTIVE.",
+                  status: 'online'
+                });
+              }}
+              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            >
+              [SECURITY]
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setSystemNotice({
+                  open: true,
+                  title: "API_ENGINE // PRIV",
+                  message: "DOCUMENTATION: PLATFORM API ENGINE INTEGRATION IS CURRENTLY PRIVATE.",
+                  status: 'online'
+                });
+              }}
+              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            >
+              [API DOCS]
+            </a>
+            <a
+              href="#"
+              onClick={handleStatusCheck}
+              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            >
+              [STATUS]
+            </a>
+          </div>
+        </div>
+
+        {/* Bottom Line: Copyright & System Health */}
+        <div className="border-t border-foreground/10 pt-3 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-muted-foreground uppercase">
+          <span>© 2026 ESSENTIAL SPACE. ALL RIGHTS RESERVED.</span>
+          <div className="flex items-center gap-1.5 font-bold text-foreground/80">
+            <span className="w-1.5 h-1.5 bg-accent rounded-none animate-pulse-dot" />
+            <span>RLS ACTIVE // 256-BIT ENCRYPTED</span>
+          </div>
         </div>
       </footer>
 
