@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { Type, Link2, CheckSquare, Key } from "lucide-react";
+import { Type, Link2, CheckSquare, Key, Shield, FileText, Activity } from "lucide-react";
 
 const supabase = createClient();
 
@@ -240,20 +240,20 @@ export default function LoginPage() {
     <main className="min-h-screen bg-background flex flex-col justify-between p-6 sm:p-8 md:p-12 text-foreground selection:bg-accent selection:text-white">
       {/* Top Navigation Header */}
       <header className="flex justify-between items-center border-b border-foreground pb-5">
-        <div className="flex items-center space-x-3">
-          <Logo size={28} className="text-foreground" />
-          <span className="font-display font-semibold tracking-wider text-xl uppercase hidden sm:inline">
+        <div className="flex items-center space-x-3.5">
+          <Logo size={36} className="text-foreground shrink-0" />
+          <span className="font-display font-bold tracking-wider text-2xl sm:text-3xl uppercase hidden sm:inline text-foreground">
             Essential Space
           </span>
         </div>
-        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground bg-muted px-2.5 py-1 border border-foreground/10 flex items-center gap-1.5 font-bold">
+        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground bg-muted px-3 py-1.5 border border-foreground/10 flex items-center gap-2 font-bold">
           <span className="w-2 h-2 bg-accent inline-block rounded-none animate-pulse-dot shrink-0" />
           SYS // INITIALIZED
         </span>
       </header>
 
       {/* Marquee Ticker Strip */}
-      <div className="w-full overflow-hidden bg-muted/40 border-b border-foreground/10 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground select-none group my-2">
+      <div className="w-full overflow-hidden bg-muted/40 border-b border-foreground/10 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground select-none group my-4">
         <div className="animate-marquee flex items-center space-x-8 group-hover:[animation-play-state:paused]">
           <div className="flex items-center space-x-8 shrink-0">
             <span>CAPTURE</span>
@@ -295,9 +295,9 @@ export default function LoginPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 py-6">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 py-10">
         {/* Left Side: Art Statement & Abstract Board Preview */}
-        <div className="flex-1 max-w-lg space-y-5">
+        <div className="flex-1 max-w-lg space-y-6">
           <span className="font-mono text-xs text-accent uppercase tracking-widest block font-semibold">
             * 01. THE MANIFESTO
           </span>
@@ -642,70 +642,85 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t-2 border-foreground pt-6 pb-2 space-y-4 text-xs font-mono">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          {/* Brand Information */}
-          <div className="space-y-1 max-w-sm">
+      {/* Multi-Column Product Footer */}
+      <footer className="border-t-2 border-foreground pt-8 pb-4 font-mono text-xs mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0">
+          {/* Column A: Brand Information */}
+          <div className="space-y-2 md:pr-8">
             <div className="flex items-center space-x-2">
-              <Logo size={18} className="text-foreground" />
-              <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">
+              <Logo size={20} className="text-foreground" />
+              <span className="font-display font-bold uppercase tracking-wider text-sm text-foreground">
                 Essential Space
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-sans">
+            <p className="text-[11px] text-muted-foreground uppercase leading-relaxed font-sans max-w-xs">
               Digital canvas for structured minds. Neo-brutalist gallery layout for spatial focus.
             </p>
           </div>
 
-          {/* Real Functional Action Buttons */}
-          <div className="flex flex-wrap gap-2 text-[10px] font-bold">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setSystemNotice({
-                  open: true,
-                  title: "SEC_MONITOR // RLS",
-                  message: "SECURITY MONITOR: END-TO-END SUPABASE ROW LEVEL SECURITY (RLS) ACTIVE.",
-                  status: 'online'
-                });
-              }}
-              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-            >
-              [SECURITY]
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setSystemNotice({
-                  open: true,
-                  title: "API_ENGINE // PRIV",
-                  message: "DOCUMENTATION: PLATFORM API ENGINE INTEGRATION IS CURRENTLY PRIVATE.",
-                  status: 'online'
-                });
-              }}
-              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-            >
-              [API DOCS]
-            </a>
-            <a
-              href="#"
-              onClick={handleStatusCheck}
-              className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-            >
-              [STATUS]
-            </a>
+          {/* Column B: System (Real Functional Links in Horizontal Row with Icons) */}
+          <div className="space-y-3 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-foreground/15 md:px-8">
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-accent block">
+              * SYSTEM
+            </span>
+            <div className="flex flex-wrap gap-2.5 items-center text-[10px] font-bold">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSystemNotice({
+                    open: true,
+                    title: "SEC_MONITOR // RLS",
+                    message: "SECURITY MONITOR: END-TO-END SUPABASE ROW LEVEL SECURITY (RLS) ACTIVE.",
+                    status: 'online'
+                  });
+                }}
+                className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5 text-accent" />
+                <span>[SECURITY]</span>
+              </a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSystemNotice({
+                    open: true,
+                    title: "API_ENGINE // PRIV",
+                    message: "DOCUMENTATION: PLATFORM API ENGINE INTEGRATION IS CURRENTLY PRIVATE.",
+                    status: 'online'
+                  });
+                }}
+                className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5 text-accent" />
+                <span>[API DOCS]</span>
+              </a>
+              <a
+                href="#"
+                onClick={handleStatusCheck}
+                className="px-3 py-1.5 border-2 border-foreground bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5"
+              >
+                <Activity className="w-3.5 h-3.5 text-accent" />
+                <span>[STATUS]</span>
+              </a>
+            </div>
           </div>
-        </div>
 
-        {/* Bottom Line: Copyright & System Health */}
-        <div className="border-t border-foreground/10 pt-3 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-muted-foreground uppercase">
-          <span>© 2026 ESSENTIAL SPACE. ALL RIGHTS RESERVED.</span>
-          <div className="flex items-center gap-1.5 font-bold text-foreground/80">
-            <span className="w-1.5 h-1.5 bg-accent rounded-none animate-pulse-dot" />
-            <span>RLS ACTIVE // 256-BIT ENCRYPTED</span>
+          {/* Column C: Compliance & Copyright */}
+          <div className="space-y-3 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-foreground/15 md:pl-8">
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground block">
+              ENVIRONMENT
+            </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 font-bold text-foreground/80 text-xs">
+                <span className="w-2 h-2 bg-accent inline-block rounded-none animate-pulse-dot shrink-0" />
+                <span>RLS ACTIVE // 256-BIT ENCRYPTED</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground uppercase block leading-normal">
+                © 2026 ESSENTIAL SPACE. ALL RIGHTS RESERVED.
+              </span>
+            </div>
           </div>
         </div>
       </footer>
