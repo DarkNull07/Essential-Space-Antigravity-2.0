@@ -1332,7 +1332,13 @@ export default function Canvas({
       )}
 
       {/* Grid Canvas Sortable Section */}
-      <section className="flex-grow">
+      <motion.section
+        custom={4}
+        initial="hidden"
+        animate="visible"
+        variants={fadeUpVariant}
+        className="flex-grow"
+      >
         {filteredCards.length > 0 ? (
           (() => {
             const activeCard = mounted ? cards.find((c) => String(c.id) === activeId) : undefined;
@@ -1424,7 +1430,7 @@ export default function Canvas({
             </div>
           )
         )}
-      </section>
+      </motion.section>
 
       {/* Neo-Brutalist Rename Category Modal */}
       {isRenameModalOpen && activeCategory && (
