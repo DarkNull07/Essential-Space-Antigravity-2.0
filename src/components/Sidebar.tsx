@@ -19,7 +19,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { restrictToParentElement } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { createCategory, deleteCategory, updateCategoryOrder } from "@/app/actions";
 import Logo from "@/components/Logo";
 import { useConfirm } from "./ConfirmDialog";
@@ -346,7 +346,7 @@ export default function Sidebar({
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
-            modifiers={[restrictToParentElement]}
+            modifiers={[restrictToVerticalAxis]}
           >
             <SortableContext items={topLevelCategories.map((c) => String(c.id))} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
@@ -375,7 +375,7 @@ export default function Sidebar({
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleSubDragEnd}
-                            modifiers={[restrictToParentElement]}
+                            modifiers={[restrictToVerticalAxis]}
                           >
                             <SortableContext
                               items={subcats.map((c) => String(c.id))}
