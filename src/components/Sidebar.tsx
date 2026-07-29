@@ -78,58 +78,60 @@ function SortableCategoryItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`border-2 border-foreground p-3 flex justify-between items-center transition-all ${
-        category.parentId ? "ml-4 w-[calc(100%-1rem)]" : ""
-      } ${
-        isActive
-          ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-          : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-      }`}
+      className={category.parentId ? "ml-4 w-[calc(100%-1rem)]" : "w-full"}
     >
-      {/* Clickable Area for Selection & Drag */}
       <div
-        {...attributes}
-        {...listeners}
-        onClick={onClick}
-        style={{ touchAction: "none" }}
-        className="flex items-center space-x-3 flex-1 min-w-0 group/item cursor-grab active:cursor-grabbing touch-none select-none"
+        className={`border-2 border-foreground p-3 flex justify-between items-center transition-all ${
+          isActive
+            ? "bg-accent text-white shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            : "bg-card hover:bg-muted text-foreground shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+        }`}
       >
-        {isActive ? <FolderOpen className="w-4 h-4 shrink-0" /> : <Folder className="w-4 h-4 shrink-0" />}
-        
-        <div className="flex items-center space-x-2 flex-1 min-w-0">
-          <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
-            {category.name}
+        {/* Clickable Area for Selection & Drag */}
+        <div
+          {...attributes}
+          {...listeners}
+          onClick={onClick}
+          style={{ touchAction: "none" }}
+          className="flex items-center space-x-3 flex-1 min-w-0 group/item cursor-grab active:cursor-grabbing touch-none select-none"
+        >
+          {isActive ? <FolderOpen className="w-4 h-4 shrink-0" /> : <Folder className="w-4 h-4 shrink-0" />}
+          
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
+            <span className="font-display font-semibold text-xs tracking-wider uppercase truncate">
+              {category.name}
+            </span>
+          </div>
+
+          <span
+            className={`font-mono text-[9px] px-1.5 py-0.5 border shrink-0 ${
+              isActive
+                ? "bg-white/20 border-white/20 text-white"
+                : "bg-muted border-foreground/10 text-muted-foreground"
+            }`}
+          >
+            {count}
           </span>
         </div>
 
-        <span
-          className={`font-mono text-[9px] px-1.5 py-0.5 border shrink-0 ${
+        {/* Delete Category */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(category.id);
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          className={`p-1 border border-transparent transition-all rounded ${
             isActive
-              ? "bg-white/20 border-white/20 text-white"
-              : "bg-muted border-foreground/10 text-muted-foreground"
+              ? "hover:bg-white/20 hover:border-white text-white"
+              : "hover:bg-accent/10 hover:border-accent text-muted-foreground hover:text-accent"
           }`}
         >
-          {count}
-        </span>
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
-
-      {/* Delete Category */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(category.id);
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-        className={`p-1 border border-transparent transition-all rounded ${
-          isActive
-            ? "hover:bg-white/20 hover:border-white text-white"
-            : "hover:bg-accent/10 hover:border-accent text-muted-foreground hover:text-accent"
-        }`}
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
     </div>
   );
 }
@@ -384,7 +386,6 @@ export default function Sidebar({
                                   {subcats.map((sub) => (
                                     <motion.div
                                       key={sub.id}
-                                      layout
                                       initial={{ opacity: 0, height: 0, overflow: "hidden" }}
                                       animate={{ opacity: 1, height: "auto" }}
                                       exit={{ opacity: 0, height: 0 }}
