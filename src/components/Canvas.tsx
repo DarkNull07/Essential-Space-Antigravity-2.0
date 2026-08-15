@@ -162,6 +162,12 @@ export default function Canvas({
   const [creatingSub, setCreatingSub] = useState(false);
   const [showAddSub, setShowAddSub] = useState(false);
 
+  useEffect(() => {
+    setNewSubName("");
+    setShowAddSub(false);
+    setCreatingSub(false);
+  }, [activeCategory?.id]);
+
   const handleRenameCategorySubmit = async (e?: React.FormEvent | Event) => {
     if (e) e.preventDefault();
     if (!activeCategory || renaming) return;
@@ -198,7 +204,7 @@ export default function Canvas({
       console.error("Failed to create subcategory:", err);
       await confirm({
         title: "Creation Failed",
-        message: "A subcategory with this name already exists. Please choose a unique name.",
+        message: err instanceof Error ? err.message : "Failed to create subcategory. Please try again.",
         confirmLabel: "Close",
         mode: "alert",
       });
