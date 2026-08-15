@@ -133,10 +133,6 @@ export default function Canvas({
     })
     .sort((a, b) => a.order - b.order);
 
-  const hasSubcategories = activeCategory
-    ? categories.some((c) => c.parentId === activeCategory.id)
-    : false;
-
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const [liveStorageMB, setLiveStorageMB] = useState<number | null>(null);
@@ -1083,27 +1079,14 @@ export default function Canvas({
         </div>
       </motion.header>
 
-      {/* Quick Add Form Section or Selection Message */}
-      {activeCategory && activeSubcategoryId === null && hasSubcategories ? (
-        <motion.div
-          custom={2}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUpVariant}
-          className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] text-center"
-        >
-          <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground block">
-            * Select a subcategory to add cards here
-          </span>
-        </motion.div>
-      ) : (
-        <motion.section
-          custom={2}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUpVariant}
-          className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4"
-        >
+      {/* Quick Add Form Section */}
+      <motion.section
+        custom={2}
+        initial="hidden"
+        animate="visible"
+        variants={fadeUpVariant}
+        className="bg-card border-2 border-foreground p-5 shadow-[4px_4px_0px_0px_var(--foreground)] space-y-4"
+      >
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-foreground/10 pb-3 gap-2">
             <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
               * ADD CARD TO {activeCategory 
@@ -1227,7 +1210,6 @@ export default function Canvas({
             </div>
           </form>
         </motion.section>
-      )}
 
       {/* Subcategory Tab Bar */}
       {activeCategory && (
@@ -1240,7 +1222,6 @@ export default function Canvas({
         >
           {/* Main category tab */}
           <motion.button
-            layout
             onClick={() => setActiveSubcategoryId(null)}
             className={`px-3 py-1.5 border-2 border-foreground font-mono text-[10px] uppercase font-bold transition-all cursor-pointer ${
               activeSubcategoryId === null
@@ -1259,7 +1240,6 @@ export default function Canvas({
               .map((sub) => (
                 <motion.button
                   key={sub.id}
-                  layout
                   initial={{ opacity: 0, scale: 0.95, y: 5 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 5 }}
