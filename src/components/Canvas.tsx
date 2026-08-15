@@ -1338,6 +1338,7 @@ export default function Canvas({
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))",
                     gridAutoRows: "1px",
+                    gridAutoFlow: "dense",
                     gap: "24px",
                     alignItems: "start",
                   }}
@@ -1374,6 +1375,7 @@ export default function Canvas({
                       display: "grid",
                       gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))",
                       gridAutoRows: "1px",
+                      gridAutoFlow: "dense",
                       gap: "24px",
                       alignItems: "start",
                     }}
