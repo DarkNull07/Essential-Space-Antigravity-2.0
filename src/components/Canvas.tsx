@@ -838,7 +838,7 @@ export default function Canvas({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background bg-canvas-grid selection:bg-accent selection:text-white">
+    <div className="flex-1 flex flex-col min-h-screen lg:h-screen relative p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-background bg-canvas-grid selection:bg-accent selection:text-white">
       {/* Drag Border Outline Overlay */}
       {isDragActive && (
         <div

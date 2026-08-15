@@ -94,7 +94,7 @@ export default function DashboardClient({
     : null;
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-background text-foreground transition-colors duration-300" data-theme={theme}>
+    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-background text-foreground transition-colors duration-300" data-theme={theme}>
       <ConfirmProvider>
         <Sidebar
           categories={categories}
