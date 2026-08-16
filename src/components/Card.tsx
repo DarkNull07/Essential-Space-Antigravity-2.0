@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2 } from "lucide-react";
-import { deleteCard, updateCard, revealApiKey } from "@/app/actions";
+import { Trash2, ExternalLink, FileText, Globe, Image as ImageIcon, CheckSquare, Key, Eye, EyeOff, Copy, Check, Pencil, Download, Loader2, FolderPlus, ArrowRightLeft } from "lucide-react";
+import { deleteCard, updateCard, revealApiKey, duplicateCard, moveCardToCategory } from "@/app/actions";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle, base64ToString, stringToBase64, getDomain, stripHashtags } from "@/lib/utils";
+import CategoryPicker, { Category } from "./CategoryPicker";
 
 // Only allow safe URL schemes in hrefs to block javascript:/data: stored-XSS.
 function safeExternalHref(raw: string | null | undefined): string {
@@ -32,12 +33,14 @@ interface CardProps {
     order: number;
     categoryId: string | null;
   };
+  categories?: Category[];
   onDelete?: (id: string) => void;
   onCardUpdate?: (updated: CardProps["card"]) => void;
+  onCardCreated?: (newCard: CardProps["card"]) => void;
   isOverlay?: boolean;
 }
 
-function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
+function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, isOverlay = false }: CardProps) {
   const confirm = useConfirm();
   
   const [items, setItems] = useState<any[]>(() => {
@@ -743,39 +746,24 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
       </div>
 
       {/* Action Buttons (Visible on hover) */}
-      {(card.type === "TEXT" || card.type === "FILE") && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsNotepadOpen(true);
-          }}
-          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
-          title="Open Notepad Editor"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsNotepadOpen(true);
+        }}
+        className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
+        title="Card Options & Details"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
 
       {(card.type === "TEXT" || card.type === "FILE") && (
         <button
           onClick={handleDownloadTxt}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
+          className="absolute bottom-2 right-[72px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
           title="Download as .txt"
         >
           <Download className="w-3.5 h-3.5" />
-        </button>
-      )}
-
-      {card.type === "LINK" && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsNotepadOpen(true);
-          }}
-          className="absolute bottom-2 right-[40px] bg-background hover:bg-accent text-foreground hover:text-white border-2 border-foreground p-1.5 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
-          title="Edit Link Card"
-        >
-          <Pencil className="w-3.5 h-3.5" />
         </button>
       )}
 
@@ -791,6 +779,8 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
       {isNotepadOpen && (
         <NotepadModal
           isOpen={isNotepadOpen}
+          card={card}
+          categories={categories}
           initialTitle={card.title || ""}
           initialContent={card.type === "FILE" ? base64ToString(card.content) : card.content}
           initialDescription={card.metadata?.description || ""}
@@ -798,6 +788,8 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
           saving={savingNotepad}
           onSave={handleSaveNotepad}
           onClose={() => setIsNotepadOpen(false)}
+          onCardCreated={onCardCreated}
+          onCardUpdate={onCardUpdate}
         />
       )}
 
@@ -818,6 +810,8 @@ function Card({ card, onDelete, onCardUpdate, isOverlay = false }: CardProps) {
 
 interface NotepadModalProps {
   isOpen: boolean;
+  card: CardProps["card"];
+  categories: Category[];
   initialTitle: string;
   initialContent: string;
   initialDescription?: string;
@@ -825,10 +819,14 @@ interface NotepadModalProps {
   saving: boolean;
   onSave: (title: string, content: string, description?: string) => Promise<void>;
   onClose: () => void;
+  onCardCreated?: (newCard: CardProps["card"]) => void;
+  onCardUpdate?: (updated: CardProps["card"]) => void;
 }
 
 function NotepadModal({
   isOpen,
+  card,
+  categories,
   initialTitle,
   initialContent,
   initialDescription = "",
@@ -836,28 +834,85 @@ function NotepadModal({
   saving,
   onSave,
   onClose,
+  onCardCreated,
+  onCardUpdate,
 }: NotepadModalProps) {
+  const confirm = useConfirm();
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [description, setDescription] = useState(initialDescription);
 
+  const [pickerMode, setPickerMode] = useState<"copy" | "move" | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-
-
   const handleSave = (e?: React.SyntheticEvent | KeyboardEvent) => {
     if (e) {
-      if ('stopPropagation' in e) e.stopPropagation();
+      if ("stopPropagation" in e) e.stopPropagation();
     }
     onSave(title, content, description);
   };
 
+  const handleDuplicate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      const duplicated = await duplicateCard(card.id);
+      if (onCardCreated) {
+        onCardCreated(duplicated);
+      }
+      onClose();
+    } catch (err: any) {
+      console.error("Failed to duplicate card:", err);
+      await confirm({
+        title: "Duplicate Failed",
+        message: err instanceof Error ? err.message : "Failed to duplicate card.",
+        confirmLabel: "Close",
+        mode: "alert",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePickerSelect = async (selectedCategoryId: string | null) => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      if (pickerMode === "copy") {
+        const copiedCard = await duplicateCard(card.id, selectedCategoryId);
+        if (onCardCreated) {
+          onCardCreated(copiedCard);
+        }
+      } else if (pickerMode === "move") {
+        const movedCard = await moveCardToCategory(card.id, selectedCategoryId);
+        if (onCardUpdate) {
+          onCardUpdate(movedCard);
+        }
+      }
+      setPickerMode(null);
+      onClose();
+    } catch (err: any) {
+      console.error(`Failed to ${pickerMode} card:`, err);
+      await confirm({
+        title: pickerMode === "copy" ? "Copy Failed" : "Move Failed",
+        message: err instanceof Error ? err.message : `Failed to ${pickerMode} card.`,
+        confirmLabel: "Close",
+        mode: "alert",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
+      if (!isOpen || pickerMode) return;
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -879,7 +934,7 @@ function NotepadModal({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose, title, content, description, onSave]);
+  }, [isOpen, onClose, title, content, description, onSave, pickerMode]);
 
   if (!isOpen || !mounted || typeof window === "undefined" || !document.body) {
     return null;
@@ -915,86 +970,137 @@ function NotepadModal({
             Close [Esc]
           </button>
         </div>
-        
-        <div className="space-y-1">
-          <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-            Document Title
-          </label>
-          <input
-            type="text"
-            placeholder="UNTITLED NOTE"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
-          />
-        </div>
 
-        {cardType === "LINK" ? (
+        {pickerMode ? (
+          <div className="flex-1 flex flex-col min-h-0 space-y-2">
+            <CategoryPicker
+              categories={categories}
+              title={pickerMode === "copy" ? "COPY CARD TO..." : "MOVE CARD TO..."}
+              onSelect={handlePickerSelect}
+              onCancel={() => setPickerMode(null)}
+            />
+          </div>
+        ) : (
           <>
             <div className="space-y-1">
               <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-                URL Address
+                Document Title
               </label>
               <input
                 type="text"
-                placeholder="https://example.com/resource"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+                placeholder="UNTITLED NOTE"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-background border-2 border-foreground px-3 py-2 font-display font-black uppercase text-base focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
               />
             </div>
-            <div className="flex-1 flex flex-col min-h-0 space-y-1">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-                Link Description / Notes
-              </label>
-              <textarea
-                placeholder="Link description details..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col min-h-0 space-y-1">
-            <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
-              Document Body
-            </label>
-            <textarea
-              placeholder="Start writing..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
-            />
-          </div>
-        )}
 
-        <div className="flex justify-end space-x-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-10 px-4 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center gap-1.5"
-          >
-            {saving ? (
+            {cardType === "LINK" ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                SAVING...
+                <div className="space-y-1">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+                    URL Address
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/resource"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="w-full bg-background border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 h-10"
+                  />
+                </div>
+                <div className="flex-1 flex flex-col min-h-0 space-y-1">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+                    Link Description / Notes
+                  </label>
+                  <textarea
+                    placeholder="Link description details..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
+                  />
+                </div>
               </>
             ) : (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                SAVE CHANGES
-              </>
+              <div className="flex-1 flex flex-col min-h-0 space-y-1">
+                <label className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground font-bold">
+                  Document Body
+                </label>
+                <textarea
+                  placeholder="Start writing..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full flex-grow bg-background border-2 border-foreground p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-foreground/50 resize-none min-h-0 overflow-y-auto"
+                />
+              </div>
             )}
-          </button>
+          </>
+        )}
+
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDuplicate}
+              disabled={saving || actionLoading}
+              className="h-10 px-3 border-2 border-foreground bg-card hover:bg-muted text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+              Duplicate
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPickerMode("copy");
+              }}
+              disabled={saving || actionLoading}
+              className="h-10 px-3 border-2 border-foreground bg-card hover:bg-muted text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+              Copy to...
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPickerMode("move");
+              }}
+              disabled={saving || actionLoading}
+              className="h-10 px-3 border-2 border-foreground bg-card hover:bg-muted text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              Move to...
+            </button>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 px-4 border-2 border-foreground bg-muted hover:bg-card text-foreground font-mono text-xs uppercase font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || actionLoading}
+              className="h-10 px-4 bg-accent hover:bg-[#E04B28] text-white border-2 border-foreground font-display font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-[2px_2px_0px_0px_var(--foreground)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  SAVING...
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  SAVE CHANGES
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>,

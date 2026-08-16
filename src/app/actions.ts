@@ -208,6 +208,54 @@ export async function moveCardToCategory(cardId: string, categoryId: string | nu
   return card;
 }
 
+// Duplicate a card in place or to a target category
+export async function duplicateCard(cardId: string, targetCategoryId?: string | null) {
+  const user = await getAuthUser();
+
+  const originalCard = await prisma.card.findFirst({
+    where: { id: cardId, userId: user.id },
+  });
+
+  if (!originalCard) {
+    throw new Error("Card not found or unauthorized");
+  }
+
+  const finalCategoryId =
+    targetCategoryId !== undefined ? targetCategoryId : originalCard.categoryId;
+
+  if (finalCategoryId) {
+    const ownedCategory = await prisma.category.count({
+      where: { id: finalCategoryId, userId: user.id },
+    });
+    if (ownedCategory === 0) {
+      throw new Error("Category not found or unauthorized");
+    }
+  }
+
+  const count = await prisma.card.count({
+    where: { userId: user.id, categoryId: finalCategoryId },
+  });
+
+  const newCard = await prisma.card.create({
+    data: {
+      type: originalCard.type,
+      content: originalCard.content,
+      title: originalCard.title,
+      metadata: originalCard.metadata ?? undefined,
+      order: count,
+      categoryId: finalCategoryId,
+      userId: user.id,
+    },
+  });
+
+  revalidatePath("/");
+
+  return {
+    ...newCard,
+    content: newCard.type === "API_KEY" ? maskKey(newCard.content) : newCard.content,
+  };
+}
+
 // Delete a card
 export async function deleteCard(id: string) {
   const user = await getAuthUser();

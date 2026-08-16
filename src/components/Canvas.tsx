@@ -822,6 +822,13 @@ export default function Canvas({
     [onCardsChange],
   );
 
+  const handleCardCreated = useCallback(
+    (newCard: any) => {
+      onCardsChange((prev) => [...prev, newCard]);
+    },
+    [onCardsChange],
+  );
+
   const fadeUpVariant = {
     hidden: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 },
     visible: (i: number) => ({
@@ -1347,8 +1354,10 @@ export default function Canvas({
                       <Card
                         key={card.id}
                         card={card}
+                        categories={categories}
                         onDelete={handleCardDelete}
                         onCardUpdate={handleCardUpdate}
+                        onCardCreated={handleCardCreated}
                       />
                     ))}
                 </div>
@@ -1384,8 +1393,10 @@ export default function Canvas({
                       <Card
                         key={card.id}
                         card={card}
+                        categories={categories}
                         onDelete={handleCardDelete}
                         onCardUpdate={handleCardUpdate}
+                        onCardCreated={handleCardCreated}
                       />
                     ))}
                   </div>
