@@ -22,7 +22,7 @@ import {
 import { Plus, Link2, Type, FileText, ArrowRight, Loader2, User, LogOut, Palette, Sun, Moon, Download, Upload, Pencil, CheckSquare, Key } from "lucide-react";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Card from "./Card";
-import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAccount, renameCategory, getLiveStorageMetrics, createCategory } from "@/app/actions";
+import { createCard, updateCardsOrder, updateCard, updateUserTheme, deleteUserAccount, renameCategory, getLiveStorageMetrics, createCategory, importUserData } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle } from "@/lib/utils";
@@ -247,8 +247,8 @@ export default function Canvas({
   };
 
   const handleExportData = () => {
-    // Basic JSON snapshot of user cards/categories
-    const dataStr = JSON.stringify({ categories: [], cards }, null, 2);
+    // JSON snapshot of user cards/categories
+    const dataStr = JSON.stringify({ categories, cards }, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const exportFileDefaultName = 'essential_space_backup.json';
 
@@ -271,31 +271,42 @@ export default function Canvas({
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
-          const data = JSON.parse(event.target?.result as string);
+          const payload = JSON.parse(event.target?.result as string);
 
-          // Structured placeholder handler for safe build
-          console.log("Import data payload received:", data);
-
-          // Neo-Brutalist confirmation dialog preview
-          const confirmed = await confirm({
-            title: "Import Data",
-            message: "This will load your exported workspace settings and restore categories and cards. Click confirm to simulate this action.",
-            confirmLabel: "Simulate Import",
+          const choice = await confirm({
+            title: "Import Workspace Data",
+            message:
+              "Choose how to import your workspace data:\n\n• MERGE: Adds imported categories & cards alongside your existing data.\n• REPLACE EVERYTHING: Permanently deletes all current categories & cards before importing (DESTRUCTIVE!).",
+            confirmLabel: "Merge",
+            secondaryLabel: "Replace Everything",
             cancelLabel: "Cancel",
           });
 
-          if (confirmed) {
-            await confirm({ title: "Import Simulation", message: "Data Import Simulation Successful! In a production deployment, your database records will be hydrated.", confirmLabel: "OK", mode: "alert" });
+          if (choice === "confirm" || choice === true) {
+            await importUserData(payload, "merge");
             setShowProfileMenu(false);
+            window.location.reload();
+          } else if (choice === "secondary") {
+            await importUserData(payload, "replace");
+            setShowProfileMenu(false);
+            window.location.reload();
           }
-        } catch (err) {
-          console.error("Failed to parse import file:", err);
-          await confirm({ title: "Invalid File", message: "Invalid backup file format.", confirmLabel: "OK", mode: "alert" });
+        } catch (err: any) {
+          console.error("Failed to import workspace data:", err);
+          await confirm({
+            title: "Import Failed",
+            message: err instanceof Error ? err.message : "Failed to import workspace data.",
+            confirmLabel: "Close",
+            mode: "alert",
+          });
+        } finally {
+          e.target.value = "";
         }
       };
       reader.readAsText(file);
     } catch (err) {
       console.error("Failed to read import file:", err);
+      e.target.value = "";
     }
   };
 

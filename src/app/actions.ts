@@ -448,3 +448,94 @@ export async function getLiveStorageMetrics(): Promise<number> {
   }
 }
 
+// Import user workspace categories and cards (merge or replace mode)
+export async function importUserData(
+  payload: { categories: any[]; cards: any[] },
+  mode: "merge" | "replace"
+) {
+  const user = await getAuthUser();
+
+  // Defensive payload validation
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Invalid import payload: Must be a valid JSON object.");
+  }
+  if (!Array.isArray(payload.categories)) {
+    throw new Error("Invalid import payload: 'categories' must be an array.");
+  }
+  if (!Array.isArray(payload.cards)) {
+    throw new Error("Invalid import payload: 'cards' must be an array.");
+  }
+
+  // If replace mode, purge all current user categories & cards (scoped to user.id)
+  if (mode === "replace") {
+    await prisma.card.deleteMany({
+      where: { userId: user.id },
+    });
+    await prisma.category.deleteMany({
+      where: { userId: user.id },
+    });
+  }
+
+  const oldIdToNewIdMap = new Map<string, string>();
+
+  // Two-pass category hierarchy reconstruction
+  // Pass 1: Top-level categories (no parentId)
+  const topLevel = payload.categories.filter((cat) => !cat.parentId);
+  for (const cat of topLevel) {
+    if (!cat || typeof cat.name !== "string" || !cat.name.trim()) continue;
+    const created = await prisma.category.create({
+      data: {
+        name: cat.name.trim(),
+        order: typeof cat.order === "number" ? cat.order : 0,
+        userId: user.id,
+      },
+    });
+    if (cat.id) {
+      oldIdToNewIdMap.set(String(cat.id), created.id);
+    }
+  }
+
+  // Pass 2: Subcategories (has parentId)
+  const subCategories = payload.categories.filter((cat) => Boolean(cat.parentId));
+  for (const cat of subCategories) {
+    if (!cat || typeof cat.name !== "string" || !cat.name.trim()) continue;
+    const mappedParentId = cat.parentId ? oldIdToNewIdMap.get(String(cat.parentId)) : null;
+    const created = await prisma.category.create({
+      data: {
+        name: cat.name.trim(),
+        order: typeof cat.order === "number" ? cat.order : 0,
+        parentId: mappedParentId || null,
+        userId: user.id,
+      },
+    });
+    if (cat.id) {
+      oldIdToNewIdMap.set(String(cat.id), created.id);
+    }
+  }
+
+  // Cards import
+  for (const card of payload.cards) {
+    if (!card || typeof card.type !== "string" || !card.content) continue;
+
+    const mappedCategoryId = card.categoryId ? oldIdToNewIdMap.get(String(card.categoryId)) || null : null;
+
+    // For API_KEY type cards: ciphertext is copied as-is
+    const finalContent = String(card.content);
+
+    await prisma.card.create({
+      data: {
+        type: card.type,
+        content: finalContent,
+        title: card.title || null,
+        metadata: card.metadata ?? undefined,
+        order: typeof card.order === "number" ? card.order : 0,
+        categoryId: mappedCategoryId,
+        userId: user.id,
+      },
+    });
+  }
+
+  revalidatePath("/");
+  return { success: true };
+}
+

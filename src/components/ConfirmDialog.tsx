@@ -6,31 +6,34 @@ interface ConfirmOptions {
   title: string;
   message: string;
   confirmLabel?: string;
+  secondaryLabel?: string;
   cancelLabel?: string;
   /** When "alert", the Cancel button is hidden — use for error/info notices. */
   mode?: "confirm" | "alert";
 }
 
+export type ConfirmResult = "confirm" | "secondary" | false | boolean;
+
 interface ConfirmContextType {
-  confirm: (options: ConfirmOptions) => Promise<boolean>;
+  confirm: (options: ConfirmOptions) => Promise<ConfirmResult>;
 }
 
 const ConfirmContext = createContext<ConfirmContextType | null>(null);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<
-    Array<{ options: ConfirmOptions; resolve: (value: boolean) => void }>
+    Array<{ options: ConfirmOptions; resolve: (value: ConfirmResult) => void }>
   >([]);
 
   const current = queue[0] || null;
 
-  const confirm = (options: ConfirmOptions): Promise<boolean> => {
-    return new Promise<boolean>((resolve) => {
+  const confirm = (options: ConfirmOptions): Promise<ConfirmResult> => {
+    return new Promise<ConfirmResult>((resolve) => {
       setQueue((prev) => [...prev, { options, resolve }]);
     });
   };
 
-  const settle = (value: boolean) => {
+  const settle = (value: ConfirmResult) => {
     setQueue((prev) => {
       if (prev.length === 0) return prev;
       const [head, ...rest] = prev;
@@ -40,7 +43,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleCancel = () => settle(false);
-  const handleConfirm = () => settle(true);
+  const handleConfirm = () => settle(current?.options.secondaryLabel ? "confirm" : true);
+  const handleSecondary = () => settle("secondary");
 
   const isAlert = current?.options.mode === "alert";
 
@@ -80,23 +84,31 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               <h3 className="font-display font-bold text-xl uppercase tracking-tight text-foreground">
                 {current.options.title}
               </h3>
-              <p className="font-sans text-xs text-muted-foreground leading-relaxed">
+              <p className="font-sans text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {current.options.message}
               </p>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
               {!isAlert && (
                 <button
                   onClick={handleCancel}
-                  className="font-mono text-xs uppercase border-2 border-foreground bg-background hover:bg-muted text-foreground px-4 py-2.5 font-bold shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                  className="font-mono text-xs uppercase border-2 border-foreground bg-background hover:bg-muted text-foreground px-4 py-2.5 font-bold shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
                 >
                   {current.options.cancelLabel || "Cancel"}
                 </button>
               )}
+              {current.options.secondaryLabel && (
+                <button
+                  onClick={handleSecondary}
+                  className="font-mono text-xs uppercase border-2 border-foreground bg-red-600 text-white px-4 py-2.5 font-bold hover:bg-red-700 shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
+                >
+                  {current.options.secondaryLabel}
+                </button>
+              )}
               <button
                 onClick={handleConfirm}
-                className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                className="font-mono text-xs uppercase border-2 border-foreground bg-accent text-white px-4 py-2.5 font-bold hover:bg-[#E04B28] shadow-[2px_2px_0px_0px_var(--foreground,#000)] hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_var(--foreground,#000)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
               >
                 {current.options.confirmLabel || "Confirm"}
               </button>
