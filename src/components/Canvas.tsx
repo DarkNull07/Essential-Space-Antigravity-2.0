@@ -1231,7 +1231,7 @@ export default function Canvas({
           initial="hidden"
           animate="visible"
           variants={fadeUpVariant}
-          className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2 overflow-hidden"
+          className="flex flex-wrap gap-2 border-b-2 border-foreground pb-2"
         >
           {/* Main category tab */}
           <motion.button
