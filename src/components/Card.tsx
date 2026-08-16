@@ -11,6 +11,7 @@ import { useConfirm } from "./ConfirmDialog";
 import { sanitizeTitle, base64ToString, stringToBase64, getDomain, stripHashtags } from "@/lib/utils";
 import { Category } from "./CategoryPicker";
 
+const NotepadModal = dynamic(() => import("./NotepadModal"), { ssr: false });
 const ImageLightbox = dynamic(() => import("./ImageLightbox"), { ssr: false });
 
 // Only allow safe URL schemes in hrefs to block javascript:/data: stored-XSS.
