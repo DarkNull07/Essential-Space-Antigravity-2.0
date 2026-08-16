@@ -529,15 +529,7 @@ function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, is
           return (
             <div className="space-y-4">
               <div className="flex items-start gap-4 w-full">
-                <img
-                  src={`https://www.google.com/s2/favicons?sz=64&domain=${rootDomain}`}
-                  alt=""
-                  className="w-12 h-12 flex-shrink-0 border-2 border-black bg-white rounded-none object-contain p-1"
-                  draggable={false}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
+                <CardHeaderFavicon domain={rootDomain} />
                 
                 <div className="flex flex-col min-w-0 flex-grow">
                   <h4 className="font-sans font-bold text-sm uppercase tracking-tight leading-tight">
@@ -815,6 +807,7 @@ function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, is
 function InlineLinkWidget({ url }: { url: string }) {
   const [title, setTitle] = useState("");
   const [isDark, setIsDark] = useState(false);
+  const [faviconError, setFaviconError] = useState(false);
   
   useEffect(() => {
     const checkDark = () => {
@@ -877,15 +870,18 @@ function InlineLinkWidget({ url }: { url: string }) {
           : "border border-black bg-white text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
       }`}
     >
-      <img
-        src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
-        className="w-5 h-5 object-contain flex-shrink-0"
-        alt=""
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-        draggable={false}
-      />
+      {faviconError ? (
+        <Globe className={`w-5 h-5 flex-shrink-0 ${isDark ? "text-zinc-400" : "text-zinc-600"}`} />
+      ) : (
+        <img
+          src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+          alt=""
+          loading="lazy"
+          className="w-5 h-5 object-contain flex-shrink-0"
+          onError={() => setFaviconError(true)}
+          draggable={false}
+        />
+      )}
 
       <div className="flex flex-col flex-1 min-w-0 text-left">
         <span className={`text-xs break-all whitespace-pre-wrap line-clamp-1 ${
@@ -918,6 +914,29 @@ function InlineLinkWidget({ url }: { url: string }) {
   );
 }
 
+function CardHeaderFavicon({ domain }: { domain: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="w-12 h-12 flex-shrink-0 border-2 border-black bg-white rounded-none flex items-center justify-center p-1">
+        <Globe className="w-6 h-6 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+      alt=""
+      loading="lazy"
+      className="w-12 h-12 flex-shrink-0 border-2 border-black bg-white rounded-none object-contain p-1"
+      draggable={false}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 function LinkFavicon({ domain }: { domain: string }) {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const faviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
@@ -931,6 +950,7 @@ function LinkFavicon({ domain }: { domain: string }) {
         <img
           src={faviconUrl}
           alt=""
+          loading="lazy"
           className={`w-full h-full object-contain absolute inset-0 transition-opacity duration-200 ${
             status === "success" ? "opacity-100" : "opacity-0"
           }`}
