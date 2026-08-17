@@ -71,7 +71,6 @@ export async function updateCategoriesOrder(categoryIds: string[]) {
   );
 
   await prisma.$transaction(updates);
-  revalidatePath("/");
 }
 
 export async function updateCategoryOrder(categoryIds: string[]) {
@@ -184,7 +183,6 @@ export async function updateCardsOrder(cardIds: string[]) {
   );
 
   await prisma.$transaction(updates);
-  revalidatePath("/");
 }
 
 // Move card to a different category
