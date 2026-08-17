@@ -166,6 +166,8 @@ export default function Sidebar({
     })
   );
 
+  console.log(`[${new Date().toISOString()}] [Sidebar Render] categories prop:`, categories.map(c => `${c.name} (id:${c.id}, order:${c.order}, parent:${c.parentId || "none"})`));
+
   const topLevelCategories = categories
     .filter((c) => !c.parentId)
     .sort((a, b) => a.order - b.order);
@@ -188,7 +190,11 @@ export default function Sidebar({
       updatedCategories.push(...parentSubcats);
     });
 
+    console.log(`[${new Date().toISOString()}] [handleDragEnd (1)] reordered updatedCategories:`, updatedCategories.map(c => `${c.name} (id:${c.id}, order:${c.order})`));
+
     onCategoriesChange(updatedCategories);
+
+    console.log(`[${new Date().toISOString()}] [handleDragEnd (2)] onCategoriesChange line reached`);
 
     try {
       await updateCategoryOrder(reorderedTopLevel.map((c) => String(c.id)));

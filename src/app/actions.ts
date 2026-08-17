@@ -71,6 +71,7 @@ export async function updateCategoriesOrder(categoryIds: string[]) {
   );
 
   await prisma.$transaction(updates);
+  revalidatePath("/");
 }
 
 export async function updateCategoryOrder(categoryIds: string[]) {
