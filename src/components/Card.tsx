@@ -642,7 +642,7 @@ function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, is
                         {item.checked && <Check className="w-3 h-3 stroke-[3px]" />}
                       </div>
                       <span
-                        className={`font-mono text-[11px] select-none break-all line-clamp-2 ${
+                        className={`font-mono text-[11px] select-none break-words ${
                           item.checked ? "line-through text-muted-foreground font-semibold" : "text-foreground"
                         }`}
                       >
