@@ -166,8 +166,6 @@ export default function Sidebar({
     })
   );
 
-  console.log(`[${new Date().toISOString()}] [Sidebar Render] categories prop:`, categories.map(c => `${c.name} (id:${c.id}, order:${c.order}, parent:${c.parentId || "none"})`));
-
   const topLevelCategories = categories
     .filter((c) => !c.parentId)
     .sort((a, b) => a.order - b.order);
@@ -181,7 +179,10 @@ export default function Sidebar({
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reorderedTopLevel = arrayMove(topLevelCategories, oldIndex, newIndex);
+    const reorderedTopLevel = arrayMove(topLevelCategories, oldIndex, newIndex).map((c, index) => ({
+      ...c,
+      order: index,
+    }));
 
     const updatedCategories: Category[] = [];
     reorderedTopLevel.forEach((parent) => {
@@ -190,11 +191,7 @@ export default function Sidebar({
       updatedCategories.push(...parentSubcats);
     });
 
-    console.log(`[${new Date().toISOString()}] [handleDragEnd (1)] reordered updatedCategories:`, updatedCategories.map(c => `${c.name} (id:${c.id}, order:${c.order})`));
-
     onCategoriesChange(updatedCategories);
-
-    console.log(`[${new Date().toISOString()}] [handleDragEnd (2)] onCategoriesChange line reached`);
 
     try {
       await updateCategoryOrder(reorderedTopLevel.map((c) => String(c.id)));
@@ -213,7 +210,10 @@ export default function Sidebar({
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reorderedSubcats = arrayMove(activeSubcats, oldIndex, newIndex);
+    const reorderedSubcats = arrayMove(activeSubcats, oldIndex, newIndex).map((c, index) => ({
+      ...c,
+      order: index,
+    }));
 
     const updatedCategories: Category[] = [];
     const topLevel = categories.filter((c) => !c.parentId).sort((a, b) => a.order - b.order);
