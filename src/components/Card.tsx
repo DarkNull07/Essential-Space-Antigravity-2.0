@@ -235,7 +235,7 @@ function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, is
         newMetadata = {
           ...(card.metadata || {}),
           domain,
-          favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+          favicon: `/api/favicon?domain=${domain}&sz=64`,
           description: description || "",
         };
       }
@@ -874,7 +874,7 @@ function InlineLinkWidget({ url }: { url: string }) {
         <Globe className={`w-5 h-5 flex-shrink-0 ${isDark ? "text-zinc-400" : "text-zinc-600"}`} />
       ) : (
         <img
-          src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+          src={`/api/favicon?domain=${domain}&sz=64`}
           alt=""
           loading="lazy"
           className="w-5 h-5 object-contain flex-shrink-0"
@@ -927,7 +927,7 @@ function CardHeaderFavicon({ domain }: { domain: string }) {
 
   return (
     <img
-      src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+      src={`/api/favicon?domain=${domain}&sz=64`}
       alt=""
       loading="lazy"
       className="w-12 h-12 flex-shrink-0 border-2 border-black bg-white rounded-none object-contain p-1"
@@ -939,7 +939,7 @@ function CardHeaderFavicon({ domain }: { domain: string }) {
 
 function LinkFavicon({ domain }: { domain: string }) {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const faviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+  const faviconUrl = `/api/favicon?domain=${domain}&sz=64`;
 
   return (
     <div className="w-4 h-4 shrink-0 border border-foreground rounded-none bg-muted flex items-center justify-center relative overflow-hidden">

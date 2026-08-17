@@ -725,7 +725,7 @@ export default function Canvas({
         } catch {
           domain = content.trim();
         }
-        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        const faviconUrl = `/api/favicon?domain=${domain}&sz=64`;
         
         // Pass null for Youtube URLs when user left title blank so server auto-fills channel name
         const isYoutubeUrl = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i.test(trimmedContent);

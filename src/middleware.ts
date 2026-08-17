@@ -35,6 +35,12 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  // ── Favicon proxy bypass ─────────────────────────────────────────────────
+  // Allow public edge caching of favicon images without running Supabase auth
+  if (url.pathname === "/api/favicon") {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
