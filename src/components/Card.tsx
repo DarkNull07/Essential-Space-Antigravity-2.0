@@ -635,7 +635,7 @@ function Card({ card, categories = [], onDelete, onCardUpdate, onCardCreated, is
                       className="flex items-center space-x-2.5 cursor-pointer group/item py-0.5"
                     >
                       <div
-                        className={`w-4 h-4 border-2 border-foreground flex items-center justify-center transition-all ${
+                        className={`w-4 h-4 shrink-0 border-2 border-foreground flex items-center justify-center transition-all ${
                           item.checked ? "bg-accent text-white border-accent" : "bg-background"
                         }`}
                       >
